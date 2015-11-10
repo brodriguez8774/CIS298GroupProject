@@ -1082,6 +1082,8 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private MainActivity(Context context){
         mContext = context.getApplicationContext();
         mDatabase = new ThermoBaseHelper(mContext).getReadableDatabase();
+        Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
+
     }
 
     private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
