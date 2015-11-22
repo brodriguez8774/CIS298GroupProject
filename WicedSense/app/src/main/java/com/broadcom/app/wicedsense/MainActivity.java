@@ -59,7 +59,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.text.format.Time;
 /**
  * Manaages the main view and gauges for each sensor
  *
@@ -68,6 +68,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         DevicePicker.Callback, android.os.Handler.Callback, OnClickListener, ExitConfirmCallback,
         OtaUiCallback, SettingChangeListener {
     private static final String TAG = Settings.TAG_PREFIX + "MainActivity";
+    private static final String JEFF_TAG = "Jeff_Tag";
     private static final boolean DBG_LIFECYCLE = true;
     private static final boolean DBG = Settings.DBG;
 
@@ -435,6 +436,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mAnimationSlower.addAnimated(mPressureFrag);
 
         updateTemperatureScaleType();
+        Toast.makeText(this,"About to StartDatabase", Toast.LENGTH_SHORT);
         StartDatabase(this);
     }
 
@@ -771,6 +773,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 if (mHumidityFrag.isVisible() && SensorDataParser.humidityHasChanged(maskField)) {
                     value = SensorDataParser.getHumidityPercent(sensorData, offset);
                     mHumidityValue = Float.toString(value);
+                    Log.d(JEFF_TAG,"Humidity = " + mHumidityValue);
                     offset += SensorDataParser.SENSOR_HUMD_DATA_SIZE;
                     mHumidityFrag.setValue(mAnimationSlower, value);
                     updateView = true;
@@ -778,6 +781,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 if (mPressureFrag.isVisible() && SensorDataParser.pressureHasChanged(maskField)) {
                     value = SensorDataParser.getPressureMBar(sensorData, offset);
                     mPressureValue = Float.toString(value);
+                    Log.d(JEFF_TAG, "Pressure = " + mPressureValue);
                     offset += SensorDataParser.SENSOR_PRES_DATA_SIZE;
                     mPressureFrag.setValue(mAnimationSlower, value);
                     updateView = true;
@@ -790,6 +794,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                         value = SensorDataParser.getTemperatureC(sensorData, offset);
                     }
                     mTemperatureValue = Float.toString(value);
+                    Log.d(JEFF_TAG, "Temperature = "+mTemperatureValue);
                     offset += SensorDataParser.SENSOR_TEMP_DATA_SIZE;
                     mTemperatureFrag.setValue(mAnimationSlower, value);
                     updateView = true;
@@ -1084,64 +1089,29 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mContext = context.getApplicationContext();
         mDatabase = new ThermoBaseHelper(mContext).getReadableDatabase();
         Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
-
     }
 
     private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
 
-        Calendar time = new Calendar() {//  Created to get the time
-            @Override
-            public void add(int field, int value) {
-
-            }
-
-            @Override
-            protected void computeFields() {
-
-            }
-
-            @Override
-            protected void computeTime() {
-
-            }
-
-            @Override
-            public int getGreatestMinimum(int field) {
-                return 0;
-            }
-
-            @Override
-            public int getLeastMaximum(int field) {
-                return 0;
-            }
-
-            @Override
-            public int getMaximum(int field) {
-                return 0;
-            }
-
-            @Override
-            public int getMinimum(int field) {
-                return 0;
-            }
-
-            @Override
-            public void roll(int field, boolean increment) {
-
-            }
-        };
-        time.getTime();
+        Time now = new Time();
+        now.setToNow();
+        String time = now.format("%Y_%m_%d_%H_%M_%S");
 
         ContentValues values = new ContentValues();
-        values.put(WicedDBSchema.ThermoTable.Cols.TIME, time.toString());
-        values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue );
+        values.put(WicedDBSchema.ThermoTable.Cols.TIME, time);
+        Log.d(JEFF_TAG, "Put time into ContentValues = " + time);
+        values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue);
+        Log.d(JEFF_TAG, "Put Humidty into ContentValues = " + mHumidityValue);
         values.put(WicedDBSchema.ThermoTable.Cols.PRESSURE, mPressureValue);
+        Log.d(JEFF_TAG, "Put Pressure into ContentValues = " + mPressureValue);
         values.put(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, mTemperatureValue);
+        Log.d(JEFF_TAG, "Put Temperature into ContentValues = " + mTemperatureValue);
 
         return values;
     }
 
     public  void addThermoData () {//  Add a row of data????????????What am I passing in?    see page 326
+        Log.d(JEFF_TAG, "adding data");
         ContentValues values = getContentValues();
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }

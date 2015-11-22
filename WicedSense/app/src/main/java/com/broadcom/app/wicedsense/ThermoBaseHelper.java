@@ -14,7 +14,7 @@ public class ThermoBaseHelper  extends SQLiteOpenHelper {// The SQLiteOpenHelper
     // 3. If it does, open it up and see what version of your ThermoDbSchema it has.
     // 4. If it is an old version, run code to upgrade it to a newer version.
     private static final int VERSION = 1;
-    private static final String DATABASE_NAME = "thermoBase.db";
+    private static final String DATABASE_NAME = "/mnt/sdcard/thermoBase.db";
 
     public ThermoBaseHelper(Context context) {
         super(context, DATABASE_NAME, null, VERSION);
