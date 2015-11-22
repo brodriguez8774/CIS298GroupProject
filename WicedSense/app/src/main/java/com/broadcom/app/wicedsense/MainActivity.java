@@ -435,6 +435,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mAnimationSlower.addAnimated(mPressureFrag);
 
         updateTemperatureScaleType();
+        StartDatabase(this);
     }
 
     @Override
@@ -1079,7 +1080,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private String mPressureValue;
     private String mTemperatureValue;
 
-    private MainActivity(Context context){
+    public void StartDatabase(Context context){
         mContext = context.getApplicationContext();
         mDatabase = new ThermoBaseHelper(mContext).getReadableDatabase();
         Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
