@@ -1116,4 +1116,5 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }
 
+
 }

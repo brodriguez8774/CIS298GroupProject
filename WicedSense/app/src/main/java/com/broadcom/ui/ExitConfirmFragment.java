@@ -30,6 +30,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * Displays a dialog prompting the user to quit the application
@@ -37,7 +38,7 @@ import android.os.Bundle;
  */
 public class ExitConfirmFragment extends DialogFragment implements
         android.content.DialogInterface.OnClickListener {
-
+    private static final String JEFF_TAG = "Jeff_Tag";
     public static interface ExitConfirmCallback {
         public void onExit();
 
@@ -75,6 +76,7 @@ public class ExitConfirmFragment extends DialogFragment implements
         if (mCallback != null) {
             try {
                 if (which == AlertDialog.BUTTON_POSITIVE) {
+                    databaseDump();
                     mCallback.onExit();
                 } else if (which == AlertDialog.BUTTON_NEGATIVE) {
                     mCallback.onExitCancelled();
@@ -83,6 +85,9 @@ public class ExitConfirmFragment extends DialogFragment implements
             } catch (Throwable t) {
             }
         }
+    }
+    public void databaseDump (){
+        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
     }
 
 }

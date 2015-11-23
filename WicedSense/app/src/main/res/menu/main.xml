@@ -31,7 +31,7 @@
         android:showAsAction="always"
         android:title="@string/devicepicker_pick"/>
     <item
-        android:id="@+id/update_fw"
+        android:id="@+id/data_dump"
         android:orderInCategory="200"
         android:title="@string/update_fw"/>
     <item
