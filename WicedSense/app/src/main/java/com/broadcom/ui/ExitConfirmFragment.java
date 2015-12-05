@@ -30,6 +30,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * Displays a dialog prompting the user to quit the application
@@ -37,7 +38,7 @@ import android.os.Bundle;
  */
 public class ExitConfirmFragment extends DialogFragment implements
         android.content.DialogInterface.OnClickListener {
-
+    private static final String JEFF_TAG = "Jeff_Tag";
     public static interface ExitConfirmCallback {
         public void onExit();
 
@@ -84,5 +85,6 @@ public class ExitConfirmFragment extends DialogFragment implements
             }
         }
     }
+
 
 }

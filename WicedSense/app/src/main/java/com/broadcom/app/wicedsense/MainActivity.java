@@ -17,6 +17,7 @@
 package com.broadcom.app.wicedsense;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import com.broadcom.app.ledevicepicker.DevicePicker;
 import com.broadcom.app.ledevicepicker.DevicePickerActivity;
@@ -38,10 +39,12 @@ import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -56,7 +59,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.text.format.Time;
 /**
  * Manaages the main view and gauges for each sensor
  *
@@ -65,6 +68,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         DevicePicker.Callback, android.os.Handler.Callback, OnClickListener, ExitConfirmCallback,
         OtaUiCallback, SettingChangeListener {
     private static final String TAG = Settings.TAG_PREFIX + "MainActivity";
+    private static final String JEFF_TAG = "Jeff_Tag";
     private static final boolean DBG_LIFECYCLE = true;
     private static final boolean DBG = Settings.DBG;
 
@@ -114,9 +118,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                             BluetoothAdapter.ERROR);
                     switch (btState) {
 
-                    case BluetoothAdapter.STATE_TURNING_OFF:
-                        exitApp();
-                        break;
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                            exitApp();
+                            break;
                     }
                 }
             });
@@ -129,23 +133,23 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         public boolean handleMessage(Message msg) {
             switch (msg.what) {
 
-            // These events run on the mUiHandler on the UI Main Thread
-            case COMPLETE_INIT:
-                initResourcesAndResume();
-                break;
-            case PROCESS_EVENT_DEVICE_UNSUPPORTED:
-                Toast.makeText(getApplicationContext(), R.string.error_unsupported_device,
-                        Toast.LENGTH_SHORT).show();
-                break;
-            case PROCESS_CONNECTION_STATE_CHANGE_UI:
-                updateConnectionStateWidgets();
-                break;
-            case PROCESS_BATTERY_STATUS_UI:
-                updateBatteryLevelWidget(msg.arg1);
-                break;
-            case PROCESS_SENSOR_DATA_ON_UI:
-                processSensorData((byte[]) msg.obj);
-                break;
+                // These events run on the mUiHandler on the UI Main Thread
+                case COMPLETE_INIT:
+                    initResourcesAndResume();
+                    break;
+                case PROCESS_EVENT_DEVICE_UNSUPPORTED:
+                    Toast.makeText(getApplicationContext(), R.string.error_unsupported_device,
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case PROCESS_CONNECTION_STATE_CHANGE_UI:
+                    updateConnectionStateWidgets();
+                    break;
+                case PROCESS_BATTERY_STATUS_UI:
+                    updateBatteryLevelWidget(msg.arg1);
+                    break;
+                case PROCESS_SENSOR_DATA_ON_UI:
+                    processSensorData((byte[]) msg.obj);
+                    break;
             }
             return true;
         }
@@ -192,26 +196,26 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
      */
     private boolean initResourcesAndResume() {
         switch (mInitState) {
-        case 0:
-            // Check if license accepted. If not, prompt user
-            if (!mLicense.checkLicenseAccepted(getFragmentManager())) {
-                return false;
-            }
-            mInitState++;
-        case 1:
-            // Check if BT is on, If not, prompt user
-            if (!BluetoothEnabler.checkBluetoothOn(this)) {
-                return false;
-            }
-            mInitState++;
-            SenseManager.init(this);
-        case 2:
-            // Check if sense manager initialized. If not, keep waiting
-            if (waitForSenseManager()) {
-                return false;
-            }
-            mInitState = -1;
-            checkDevicePicked();
+            case 0:
+                // Check if license accepted. If not, prompt user
+                if (!mLicense.checkLicenseAccepted(getFragmentManager())) {
+                    return false;
+                }
+                mInitState++;
+            case 1:
+                // Check if BT is on, If not, prompt user
+                if (!BluetoothEnabler.checkBluetoothOn(this)) {
+                    return false;
+                }
+                mInitState++;
+                SenseManager.init(this);
+            case 2:
+                // Check if sense manager initialized. If not, keep waiting
+                if (waitForSenseManager()) {
+                    return false;
+                }
+                mInitState = -1;
+                checkDevicePicked();
         }
         mSenseManager.registerEventCallbackHandler(mSensorDataEventHandler);
 
@@ -432,6 +436,8 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mAnimationSlower.addAnimated(mPressureFrag);
 
         updateTemperatureScaleType();
+        Toast.makeText(this,"About to StartDatabase", Toast.LENGTH_SHORT);
+        StartDatabase(this);
     }
 
     @Override
@@ -561,29 +567,37 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        boolean isDeviceSelected = (mSenseManager != null && mSenseManager.getDevice() != null);
+        boolean isDeviceConnected = isDeviceSelected && mSenseManager.isConnectedAndAvailable();
         switch (item.getItemId()) {
-        case R.id.action_connectdisconnect:
-            mConnectDisconnectPending = true;
-            invalidateOptionsMenu();
-            doConnectDisconnect();
-            return true;
-        case R.id.action_pick:
-            launchDevicePicker();
-            return true;
-        case R.id.update_fw:
-            checkForFirmwareUpdate();
-            return true;
-        case R.id.get_fw_info:
-            getFirmwareInfo();
-            return true;
-        case R.id.action_settings:
-            // Launch setttings menu
-            Intent i = new Intent(this, SettingsActivity.class);
-            startActivity(i);
-            return true;
+            case R.id.action_connectdisconnect:
+                mConnectDisconnectPending = true;
+                invalidateOptionsMenu();
+                doConnectDisconnect();
+                return true;
+            case R.id.action_pick:
+                launchDevicePicker();
+                return true;
+            case R.id.data_dump:
+                if (isDeviceConnected){
+                    Toast.makeText(this,R.string.disconnect_message, Toast.LENGTH_SHORT).show();
+                }else {
+                    DataDump();
+                }
+
+                return true;
+            case R.id.get_fw_info:
+                getFirmwareInfo();
+                return true;
+            case R.id.action_settings:
+                // Launch setttings menu
+                Intent i = new Intent(this, SettingsActivity.class);
+                startActivity(i);
+                return true;
         }
         return false;
     }
+
 
     /**
      * Callback invoked when the user finishes with the license agreement dialog
@@ -646,44 +660,44 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
-        case SenseManager.EVENT_DEVICE_UNSUPPORTED:
-            mUiHandler.sendEmptyMessage(PROCESS_EVENT_DEVICE_UNSUPPORTED);
-            break;
-        case SenseManager.EVENT_CONNECTED:
-            mUiHandler.sendEmptyMessage(PROCESS_CONNECTION_STATE_CHANGE_UI);
-            onConnected();
-            break;
-        case SenseManager.EVENT_DISCONNECTED:
-            mUiHandler.sendEmptyMessage(PROCESS_CONNECTION_STATE_CHANGE_UI);
-            break;
-        case SenseManager.EVENT_BATTERY_STATUS:
-            mUiHandler.sendMessage(mUiHandler.obtainMessage(PROCESS_BATTERY_STATUS_UI, msg.arg1,
-                    msg.arg1));
-            break;
-        case SenseManager.EVENT_SENSOR_DATA:
-            mUiHandler.sendMessage(mUiHandler.obtainMessage(PROCESS_SENSOR_DATA_ON_UI, msg.obj));
-            break;
-        case SenseManager.EVENT_APP_INFO:
-            boolean success = msg.arg1 == 1;
-            OtaAppInfo appInfo = (OtaAppInfo) msg.obj;
-            if (DBG) {
-                Log.d(TAG, "EVENT_APP_INFO: success=" + success + ",otaAppInfo=" + appInfo);
-            }
-            if (mFirmwareUpdateCheckPending) {
-                mFirmwareUpdateCheckPending = false;
-                checkForFirmwareUpdate(appInfo);
+            case SenseManager.EVENT_DEVICE_UNSUPPORTED:
+                mUiHandler.sendEmptyMessage(PROCESS_EVENT_DEVICE_UNSUPPORTED);
                 break;
-            }
-
-            if (mShowAppInfoDialog) {
-                mShowAppInfoDialog = false;
-                if (success) {
-                    OtaAppInfoFragment mOtaAppInfoFragment = OtaAppInfoFragment.createDialog(
-                            mSenseManager.getDevice(), appInfo);
-                    mOtaAppInfoFragment.show(getFragmentManager(), null);
+            case SenseManager.EVENT_CONNECTED:
+                mUiHandler.sendEmptyMessage(PROCESS_CONNECTION_STATE_CHANGE_UI);
+                onConnected();
+                break;
+            case SenseManager.EVENT_DISCONNECTED:
+                mUiHandler.sendEmptyMessage(PROCESS_CONNECTION_STATE_CHANGE_UI);
+                break;
+            case SenseManager.EVENT_BATTERY_STATUS:
+                mUiHandler.sendMessage(mUiHandler.obtainMessage(PROCESS_BATTERY_STATUS_UI, msg.arg1,
+                        msg.arg1));
+                break;
+            case SenseManager.EVENT_SENSOR_DATA:
+                mUiHandler.sendMessage(mUiHandler.obtainMessage(PROCESS_SENSOR_DATA_ON_UI, msg.obj));
+                break;
+            case SenseManager.EVENT_APP_INFO:
+                boolean success = msg.arg1 == 1;
+                OtaAppInfo appInfo = (OtaAppInfo) msg.obj;
+                if (DBG) {
+                    Log.d(TAG, "EVENT_APP_INFO: success=" + success + ",otaAppInfo=" + appInfo);
                 }
-            }
-            break;
+                if (mFirmwareUpdateCheckPending) {
+                    mFirmwareUpdateCheckPending = false;
+                    checkForFirmwareUpdate(appInfo);
+                    break;
+                }
+
+                if (mShowAppInfoDialog) {
+                    mShowAppInfoDialog = false;
+                    if (success) {
+                        OtaAppInfoFragment mOtaAppInfoFragment = OtaAppInfoFragment.createDialog(
+                                mSenseManager.getDevice(), appInfo);
+                        mOtaAppInfoFragment.show(getFragmentManager(), null);
+                    }
+                }
+                break;
         }
         return true;
     }
@@ -712,85 +726,93 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         boolean updateView = false;
         long currentTimeMs = System.currentTimeMillis();
         switch (sensorData.length) {
-        case 19:
-            if (currentTimeMs - mLastRefreshTimeMs < Settings.REFRESH_INTERVAL_MS) {
-                return;
-            } else {
-                mLastRefreshTimeMs = currentTimeMs;
-            }
-
-            // packet type specifying accelerometer, gyro, magno
-            offset = 1;
-            if (SensorDataParser.accelerometerHasChanged(maskField)) {
-                if (Settings.accelerometerEnabled() && mAccelerometerFrag.isVisible()) {
-                    SensorDataParser.getAccelorometerData(sensorData, offset, values);
-                    mAccelerometerFrag.setValue(mAnimation, values[0], values[1], values[2]);
-                    updateView = true;
-                }
-                offset += SensorDataParser.SENSOR_ACCEL_DATA_SIZE;
-            }
-
-            if (SensorDataParser.gyroHasChanged(maskField)) {
-                if (Settings.gyroEnabled() && mGyroFrag.isVisible()) {
-                    SensorDataParser.getGyroData(sensorData, offset, values);
-                    mGyroFrag.setValue(mAnimation, values[0], values[1], values[2]);
-                    updateView = true;
-                }
-                offset += SensorDataParser.SENSOR_GYRO_DATA_SIZE;
-            }
-
-            if (SensorDataParser.magnetometerHasChanged(maskField)) {
-                if (Settings.compassEnabled() && mCompassFrag.isVisible()) {
-                    SensorDataParser.getMagnometerData(sensorData, offset, values);
-                    float angle = SensorDataParser.getCompassAngleDegrees(values);
-                    mCompassFrag.setValue(mAnimation, angle, values[0], values[1], values[2]);
-                    updateView = true;
-                }
-                offset += SensorDataParser.SENSOR_MAGNO_DATA_SIZE;
-            }
-
-            if (updateView && mAnimation != null) {
-                mAnimation.animate();
-            }
-            break;
-        case 7:
-
-            if (currentTimeMs - mLastRefreshSlowerTimeMs < Settings.REFRESH_INTERVAL_SLOWER_MS) {
-                return;
-            } else {
-                mLastRefreshSlowerTimeMs = currentTimeMs;
-            }
-
-            // packet type specifying temp, humid, press
-            offset = 1;
-            float value = 0;
-            if (mHumidityFrag.isVisible() && SensorDataParser.humidityHasChanged(maskField)) {
-                value = SensorDataParser.getHumidityPercent(sensorData, offset);
-                offset += SensorDataParser.SENSOR_HUMD_DATA_SIZE;
-                mHumidityFrag.setValue(mAnimationSlower, value);
-                updateView = true;
-            }
-            if (mPressureFrag.isVisible() && SensorDataParser.pressureHasChanged(maskField)) {
-                value = SensorDataParser.getPressureMBar(sensorData, offset);
-                offset += SensorDataParser.SENSOR_PRES_DATA_SIZE;
-                mPressureFrag.setValue(mAnimationSlower, value);
-                updateView = true;
-            }
-
-            if (mTemperatureFrag.isVisible() && SensorDataParser.temperatureHasChanged(maskField)) {
-                if (mIsTempScaleF) {
-                    value = SensorDataParser.getTemperatureF(sensorData, offset);
+            case 19:
+                if (currentTimeMs - mLastRefreshTimeMs < Settings.REFRESH_INTERVAL_MS) {
+                    return;
                 } else {
-                    value = SensorDataParser.getTemperatureC(sensorData, offset);
+                    mLastRefreshTimeMs = currentTimeMs;
                 }
-                offset += SensorDataParser.SENSOR_TEMP_DATA_SIZE;
-                mTemperatureFrag.setValue(mAnimationSlower, value);
-                updateView = true;
-            }
-            if (updateView && mAnimationSlower != null) {
-                mAnimationSlower.animate();
-            }
-            break;
+
+                // packet type specifying accelerometer, gyro, magno
+                offset = 1;
+                if (SensorDataParser.accelerometerHasChanged(maskField)) {
+                    if (Settings.accelerometerEnabled() && mAccelerometerFrag.isVisible()) {
+                        SensorDataParser.getAccelorometerData(sensorData, offset, values);
+                        mAccelerometerFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        updateView = true;
+                    }
+                    offset += SensorDataParser.SENSOR_ACCEL_DATA_SIZE;
+                }
+
+                if (SensorDataParser.gyroHasChanged(maskField)) {
+                    if (Settings.gyroEnabled() && mGyroFrag.isVisible()) {
+                        SensorDataParser.getGyroData(sensorData, offset, values);
+                        mGyroFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        updateView = true;
+                    }
+                    offset += SensorDataParser.SENSOR_GYRO_DATA_SIZE;
+                }
+
+                if (SensorDataParser.magnetometerHasChanged(maskField)) {
+                    if (Settings.compassEnabled() && mCompassFrag.isVisible()) {
+                        SensorDataParser.getMagnometerData(sensorData, offset, values);
+                        float angle = SensorDataParser.getCompassAngleDegrees(values);
+                        mCompassFrag.setValue(mAnimation, angle, values[0], values[1], values[2]);
+                        updateView = true;
+                    }
+                    offset += SensorDataParser.SENSOR_MAGNO_DATA_SIZE;
+                }
+
+                if (updateView && mAnimation != null) {
+                    mAnimation.animate();
+                }
+                break;
+            case 7:
+
+                if (currentTimeMs - mLastRefreshSlowerTimeMs < Settings.REFRESH_INTERVAL_SLOWER_MS) {
+                    return;
+                } else {
+                    mLastRefreshSlowerTimeMs = currentTimeMs;
+                }
+
+                // packet type specifying temp, humid, press
+                offset = 1;
+                float value = 0;
+                if (mHumidityFrag.isVisible() && SensorDataParser.humidityHasChanged(maskField)) {
+                    value = SensorDataParser.getHumidityPercent(sensorData, offset);
+                    mHumidityValue = Float.toString(value);
+                    Log.d(JEFF_TAG,"Humidity = " + mHumidityValue);
+                    offset += SensorDataParser.SENSOR_HUMD_DATA_SIZE;
+                    mHumidityFrag.setValue(mAnimationSlower, value);
+                    updateView = true;
+                }
+                if (mPressureFrag.isVisible() && SensorDataParser.pressureHasChanged(maskField)) {
+                    value = SensorDataParser.getPressureMBar(sensorData, offset);
+                    mPressureValue = Float.toString(value);
+                    Log.d(JEFF_TAG, "Pressure = " + mPressureValue);
+                    offset += SensorDataParser.SENSOR_PRES_DATA_SIZE;
+                    mPressureFrag.setValue(mAnimationSlower, value);
+                    updateView = true;
+                }
+
+                if (mTemperatureFrag.isVisible() && SensorDataParser.temperatureHasChanged(maskField)) {
+                    if (mIsTempScaleF) {
+                        value = SensorDataParser.getTemperatureF(sensorData, offset);
+                    } else {
+                        value = SensorDataParser.getTemperatureC(sensorData, offset);
+                    }
+                    mTemperatureValue = Float.toString(value);
+                    Log.d(JEFF_TAG, "Temperature = "+mTemperatureValue);
+                    offset += SensorDataParser.SENSOR_TEMP_DATA_SIZE;
+                    mTemperatureFrag.setValue(mAnimationSlower, value);
+                    updateView = true;
+                }
+                if (updateView && mAnimationSlower != null) {
+                    mAnimationSlower.animate();
+                    addThermoData();
+                    //***********************************************************************************************************************
+                }
+                break;
         }
 
         // If animation is enabled, call animate...
@@ -1062,4 +1084,47 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mTemperatureFrag = f;
     }
 
+    //************************************  This is to open the database - JEFF  Added******************
+
+    private Context mContext;
+    private SQLiteDatabase mDatabase;
+
+    private String mHumidityValue;
+    private String mPressureValue;
+    private String mTemperatureValue;
+
+    public void StartDatabase(Context context){
+        mContext = context.getApplicationContext();
+        mDatabase = new ThermoBaseHelper(mContext).getReadableDatabase();
+        Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
+    }
+
+    private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
+
+        Time now = new Time();
+        now.setToNow();
+        String time = now.format("%Y_%m_%d_%H_%M_%S");
+
+        ContentValues values = new ContentValues();
+        values.put(WicedDBSchema.ThermoTable.Cols.TIME, time);
+        Log.d(JEFF_TAG, "Put time into ContentValues = " + time);
+        values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue);
+        Log.d(JEFF_TAG, "Put Humidty into ContentValues = " + mHumidityValue);
+        values.put(WicedDBSchema.ThermoTable.Cols.PRESSURE, mPressureValue);
+        Log.d(JEFF_TAG, "Put Pressure into ContentValues = " + mPressureValue);
+        values.put(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, mTemperatureValue);
+        Log.d(JEFF_TAG, "Put Temperature into ContentValues = " + mTemperatureValue);
+
+        return values;
+    }
+
+    public  void addThermoData () {//  Add a row of data????????????What am I passing in?    see page 326
+        Log.d(JEFF_TAG, "adding data");
+        ContentValues values = getContentValues();
+        mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
+    }
+
+    public void DataDump(){
+        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
+    }
 }

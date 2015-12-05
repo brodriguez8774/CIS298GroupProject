@@ -45,6 +45,8 @@
     <string name="setting_title_gyro">Gyro</string>
     <string name="setting_title_ecompass">eCompass</string>
     <string name="setting_title_accelerometer">Accelerometer</string>
+    <string name="data_dump">Data Dump</string>
+    <string name="disconnect_message">Disconnect from Wiced first.</string>
    
     <string-array name="temperature_scale_type_names">
         <item>Fahrenheit</item>
