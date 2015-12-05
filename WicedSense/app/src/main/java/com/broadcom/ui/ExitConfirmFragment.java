@@ -76,7 +76,6 @@ public class ExitConfirmFragment extends DialogFragment implements
         if (mCallback != null) {
             try {
                 if (which == AlertDialog.BUTTON_POSITIVE) {
-                    databaseDump();
                     mCallback.onExit();
                 } else if (which == AlertDialog.BUTTON_NEGATIVE) {
                     mCallback.onExitCancelled();
@@ -86,8 +85,6 @@ public class ExitConfirmFragment extends DialogFragment implements
             }
         }
     }
-    public void databaseDump (){
-        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
-    }
+
 
 }

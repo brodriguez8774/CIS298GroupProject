@@ -567,6 +567,8 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        boolean isDeviceSelected = (mSenseManager != null && mSenseManager.getDevice() != null);
+        boolean isDeviceConnected = isDeviceSelected && mSenseManager.isConnectedAndAvailable();
         switch (item.getItemId()) {
             case R.id.action_connectdisconnect:
                 mConnectDisconnectPending = true;
@@ -576,8 +578,13 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             case R.id.action_pick:
                 launchDevicePicker();
                 return true;
-            case R.id.update_fw:
-                checkForFirmwareUpdate();
+            case R.id.data_dump:
+                if (isDeviceConnected){
+                    Toast.makeText(this,R.string.disconnect_message, Toast.LENGTH_SHORT).show();
+                }else {
+                    DataDump();
+                }
+
                 return true;
             case R.id.get_fw_info:
                 getFirmwareInfo();
@@ -590,6 +597,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         }
         return false;
     }
+
 
     /**
      * Callback invoked when the user finishes with the license agreement dialog
@@ -1116,5 +1124,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }
 
-
+    public void DataDump(){
+        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
+    }
 }
