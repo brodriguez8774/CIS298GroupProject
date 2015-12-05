@@ -26,6 +26,7 @@ import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.app.Fragment;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -34,6 +35,70 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 /**
+ * Our Implimentation of (speed) AccelerometerFragment.
+ * Will attempt to closely resemble practices done in class/assignments.
+ */
+public class AccelerometerFragment extends Fragment {
+
+    //region Variables
+
+    private TextView mCurrent;
+    private TextView mMin;
+    private TextView mMax;
+    private TextView mAvg;
+
+    //endregion
+
+
+
+    //region Static information to summon Fragment.
+    private static final String ARG_ACCELEROMETER_ID= "accelerometer_id";
+
+    private static AccelerometerFragment newInstance() {
+        // Provided in case bundle is required in the future.
+        Bundle args = new Bundle();
+
+        // Make and return new fragment.
+        AccelerometerFragment fragment = new AccelerometerFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    //endregion
+
+
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Use inflater to get view from layout.
+        View view = inflater.inflate(R.layout.speed_fragment, container, false);
+
+        // Set class level vars to appropriate xml attributes.
+        mCurrent = (TextView) view.findViewById(R.id.speed_current);
+        mMin = (TextView) view.findViewById(R.id.speed_min);
+        mMax = (TextView) view.findViewById(R.id.speed_max);
+        mAvg = (TextView) view.findViewById(R.id.speed_avg);
+
+        // Read in from database and set values here?
+
+        return view;
+    }
+}
+
+
+/**
+ * WICEDSENCE default stuff.
+ * Commenting out instead of removing in case we need to reference it to get the program running.
+ *
+ *
+ *
+ *
  * Fragment to display the Accelerometer data. This view consists of
  *
  * 1. A "bubble" view that displays the X and Y data as the position of a
@@ -42,7 +107,7 @@ import android.widget.TextView;
  * 2. A hidden text view that displays the X,Y,Z raw data that is shown when the
  * user taps on this fragment.
  *
- */
+ *//*
 public class AccelerometerFragment extends Fragment implements OnClickListener,
         AnimatorUpdateListener, Animated {
     private static final int mMaxValue = SensorDataParser.SENSOR_ACCEL_MAX;
@@ -115,7 +180,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Get the horizontal and vertical boundaries that the bubble can travel
      * dynamically, based on the current screen size
-     */
+     *//*
     private void initGaugeRange() {
         if (!mRangeInited) {
             int rangeWidth = mRange.getWidth();
@@ -135,7 +200,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
      *
      * @param value
      * @return
-     */
+     *//*
     private float getBoundedValue(float value) {
         if (value > mMaxValue) {
             value = mMaxValue;
@@ -152,7 +217,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
      *
      * @param x
      * @param y
-     */
+     *//*
     private void setGauge(float x, float y) {
         // scale x translation
         mBubble.setTranslationX(x * mAccelMaxWidth / mValueLength);
@@ -163,7 +228,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
 
     /**
      * Update the text widgets that show x,y,z
-     */
+     *//*
     private void updateTextWidgets() {
         mRawX.setText(getString(R.string.raw_x, String.format("%.1f", mX)));
         mRawY.setText(getString(R.string.raw_y, String.format("%.1f", mY)));
@@ -179,7 +244,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
      * @param x
      * @param y
      * @param z
-     */
+     *//*
     public void setValue(AnimationManager animation, float x, float y, float z) {
 
         initGaugeRange();
@@ -201,7 +266,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Callback invoked when the user clicks on the accelerometer view. Toggles
      * showing/hiddening the raw x,y,z values
-     */
+     *//*
     @Override
     public void onClick(View v) {
         int visibility = mRawX.getVisibility() == View.VISIBLE ? View.INVISIBLE : View.VISIBLE;
@@ -212,7 +277,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
 
     /**
      * Reset all UI components and values to initial conditions
-     */
+     *//*
     public void reset() {
         mRawX.setText("");
         mRawY.setText("");
@@ -225,7 +290,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Called by the animation manager to display the first value used in the
      * animation.
-     */
+     *//*
     @Override
     public void showFirstAnimatedValues() {
         setGauge(mX, mY);
@@ -235,7 +300,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Called by the animation manager to determine if values have changed that
      * need to be animated
-     */
+     *//*
     @Override
     public boolean hasAnimatedValuesChanged() {
         return mPreviousX != mX || mPreviousY != mY;
@@ -244,7 +309,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Called by the animation manager to save the current values for the next
      * interaction of animation
-     */
+     *//*
     @Override
     public void saveAnimatedValues() {
         mPreviousX = mX;
@@ -253,7 +318,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
 
     /**
      * Called by the animation manager to prepare the values to animate
-     */
+     *//*
     @Override
     public void prepareAnimatedValues(List<PropertyValuesHolder> values) {
         values.add(PropertyValuesHolder.ofFloat("accel.x", mPreviousX, mX));
@@ -263,7 +328,7 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
     /**
      * Called by the animation manager to update the UI with the currently
      * specified values
-     */
+     *//*
     @Override
     public void onAnimationUpdate(ValueAnimator animation) {
         Object x = animation.getAnimatedValue("accel.x");
@@ -288,4 +353,4 @@ public class AccelerometerFragment extends Fragment implements OnClickListener,
         }
 
     }
-}
+} */
