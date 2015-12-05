@@ -5,6 +5,7 @@
     <string name="app_name">WICED Sense</string>
     <string name="title_devicepicker">Select the WICED Sense Kit</string>
     <string name="title_activity_compass">WICED Sense</string>
+    <!--
     <string name="temperature_label">TEMP</string>
     <string name="temperature_value_f">%1$s\u00B0F</string>
     <string name="temperature_value_c">%1$s\u00B0C</string>
@@ -12,6 +13,7 @@
     <string name="pressure_value">%1$s</string>
     <string name="humidity_label">HUMD</string>
     <string name="humidity_value">%1$s%%</string>
+    -->
     <string name="gyro_label">GYRO</string>
     <string name="accelerometer_label">ACCEL</string>
     <string name="connect">Connect</string>
@@ -54,4 +56,29 @@
         <item>F</item>
         <item>C</item>
     </string-array>
+
+
+
+
+
+    <!--Our Variables -->
+
+    <string name="current_label">Current:</string>
+    <string name="min_label">Min:</string>
+    <string name="max_label">Max:</string>
+    <string name="avg_label">Avg:</string>
+    <string name="placeholder">PLACEHOLDER</string>
+
+    <string name="orientation_label">Orientation</string>
+    <string name="speed_label">Speed</string>
+    <string name="compass_label">Compass</string>
+    <string name="pressure_label">Air Pressure</string>
+    <string name="humidity_label">Humidity</string>
+    <string name="temperature_label">Temperature</string>
+
+
+
+
+
+
 </resources>

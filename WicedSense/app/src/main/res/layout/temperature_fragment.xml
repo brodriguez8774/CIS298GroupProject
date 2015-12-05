@@ -1,92 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-/******************************************************************************
- *
- *  Copyright (C) 2013-2014 Broadcom Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- ******************************************************************************/
+Temperature Fragment Layout.
+Shows current, min, max, and average temperatures in a list-view-style format.
 -->
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/gauge_layout"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/temperature_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical" >
 
     <TextView
-        android:id="@+id/gauge_value"
-        style="@style/thermo_text_style"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
+        android:gravity="center"
+        android:textSize="36sp"
+        android:paddingTop="30dp"
+        android:paddingBottom="30dp"
+        android:text="@string/temperature_label"
+        style="?android:listSeparatorTextViewStyle" />
 
-    <TextView
-        android:id="@+id/gauge_label"
-        style="@style/thermo_text_style"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:text="@string/temperature_label" />
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingStart="50dp"
+        android:paddingEnd="45dp"
+        style="?android:listSeparatorTextViewStyle">
 
-    <RelativeLayout
-        android:id="@+id/gauge_frame"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/gauge_label"
-        android:layout_below="@id/gauge_value"
-        android:layout_centerVertical="true" >
-
-        <ImageView
-            android:id="@+id/gauge_bg"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:scaleType="fitCenter"
-            android:src="@drawable/thermo_bg" />
+            android:layout_weight="1"
+            android:text="@string/current_label" />
 
-        <FrameLayout
-            android:id="@+id/gauge_level_frame"
-            android:layout_width="@dimen/thermo_level_width"
-            android:layout_height="wrap_content"
-            android:layout_alignBottom="@id/gauge_bg"
-            android:layout_alignTop="@id/gauge_bg"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="@dimen/thermo_range_bottom_margin"
-            android:layout_marginTop="@dimen/thermo_range_top_margin" >
-
-            <View
-                android:id="@+id/gauge_range"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" >
-            </View>
-
-            <View
-                android:id="@+id/gauge_level"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/temp_color" >
-            </View>
-        </FrameLayout>
-
-        <ImageView
+        <TextView
+            android:id="@+id/temp_current"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:scaleType="fitCenter"
-            android:src="@drawable/temp_top" />
-    </RelativeLayout>
+            android:layout_weight="1"
+            android:text="@string/placeholder" />
+    </LinearLayout>
 
-</RelativeLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingStart="50dp"
+        android:paddingEnd="25dp"
+        style="?android:listSeparatorTextViewStyle" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/min_label" />
+
+        <TextView
+            android:id="@+id/temp_min"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/placeholder" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingStart="50dp"
+        android:paddingEnd="25dp"
+        style="?android:listSeparatorTextViewStyle" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/max_label" />
+
+        <TextView
+            android:id="@+id/temp_max"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/placeholder" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingStart="50dp"
+        android:paddingEnd="25dp"
+        style="?android:listSeparatorTextViewStyle" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/avg_label" />
+
+        <TextView
+            android:id="@+id/temp_avg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/placeholder" />
+    </LinearLayout>
+
+</LinearLayout>

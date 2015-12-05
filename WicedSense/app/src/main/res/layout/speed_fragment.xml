@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-Humidity Fragment Layout.
-Shows current, min, max, and average temperatures in a list-view-style format.
+Speed Fragment Layout.
+Shows current, min, max, and average speeds in a list-view-style format.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/humidity_layout"
+              android:id="@+id/speed_layout"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical" >
@@ -16,7 +16,7 @@ Shows current, min, max, and average temperatures in a list-view-style format.
         android:textSize="36sp"
         android:paddingTop="30dp"
         android:paddingBottom="30dp"
-        android:text="@string/humidity_label"
+        android:text="@string/speed_label"
         style="?android:listSeparatorTextViewStyle" />
 
     <LinearLayout
@@ -36,7 +36,7 @@ Shows current, min, max, and average temperatures in a list-view-style format.
             android:text="@string/current_label" />
 
         <TextView
-            android:id="@+id/humidity_current"
+            android:id="@+id/speed_current"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -60,7 +60,7 @@ Shows current, min, max, and average temperatures in a list-view-style format.
             android:text="@string/min_label" />
 
         <TextView
-            android:id="@+id/humidity_min"
+            android:id="@+id/speed_min"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -84,7 +84,7 @@ Shows current, min, max, and average temperatures in a list-view-style format.
             android:text="@string/max_label" />
 
         <TextView
-            android:id="@+id/humidity_max"
+            android:id="@+id/speed_max"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -108,7 +108,7 @@ Shows current, min, max, and average temperatures in a list-view-style format.
             android:text="@string/avg_label" />
 
         <TextView
-            android:id="@+id/humidity_avg"
+            android:id="@+id/speed_avg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
