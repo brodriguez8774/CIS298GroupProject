@@ -71,6 +71,7 @@
     <string name="avg_label">Avg:</string>
     <string name="placeholder">PLACEHOLDER</string>
 
+    <string name="main_fragment_label">Current Readings</string>
     <string name="orientation_label">Orientation</string>
     <string name="speed_label">Speed</string>
     <string name="compass_label">Compass</string>

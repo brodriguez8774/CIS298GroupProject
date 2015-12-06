@@ -10,7 +10,7 @@ import android.support.v4.app.FragmentManager;
  * May need to change to multiple fragment activity at a later date? Not sure what the difference
  * would be as far as code.
  */
-public abstract class SingleFragmentActivity extends FragmentActivity {
+public abstract class MultipleFragmentActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
