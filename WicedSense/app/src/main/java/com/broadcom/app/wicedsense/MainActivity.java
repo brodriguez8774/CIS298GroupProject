@@ -17,7 +17,6 @@
 package com.broadcom.app.wicedsense;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Iterator;
 import com.broadcom.app.ledevicepicker.DevicePicker;
 import com.broadcom.app.ledevicepicker.DevicePickerActivity;
@@ -44,7 +43,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -541,10 +542,10 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         }
 
         // Update the update firmware button
-        MenuItem updateFw = menu.findItem(R.id.update_fw);
-        if (updateFw != null) {
-            updateFw.setEnabled(isDeviceSelected);
-        }
+//        MenuItem updateFw = menu.findItem(R.id.update_fw);
+//        if (updateFw != null) {
+//            updateFw.setEnabled(isDeviceSelected);
+//        }
 
         // Update the get firmware info button
         MenuItem getFwInfo = menu.findItem(R.id.get_fw_info);
@@ -1124,7 +1125,41 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }
 
+    private Cursor mMaxCursor;
     public void DataDump(){
         Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
+
+
+        Toast.makeText(this, "Humidity Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Temperature Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Pressure Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE), Toast.LENGTH_LONG).show();
+    }
+
+    public int getMaxColumnData(String columnName) {
+
+            final SQLiteStatement stmt = mDatabase
+            .compileStatement("SELECT MAX(" + columnName +") FROM "+ WicedDBSchema.ThermoTable.NAME);
+
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public int getMinColumnData (String columnName){
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT MIN(" + columnName + ") FROM " + WicedDBSchema.ThermoTable.NAME);
+
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public int getAvgColumnData (String columnName){
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + WicedDBSchema.ThermoTable.NAME);
+
+        return (int) stmt.simpleQueryForLong();
     }
 }
