@@ -32,6 +32,7 @@ import com.broadcom.ui.BluetoothEnabler;
 import com.broadcom.ui.ExitConfirmUtils;
 import com.broadcom.ui.ExitConfirmFragment.ExitConfirmCallback;
 
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
@@ -62,6 +63,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.text.format.Time;
+
 /**
  * Manaages the main view and gauges for each sensor
  *
@@ -69,6 +71,10 @@ import android.text.format.Time;
 public class MainActivity extends Activity implements OnLicenseAcceptListener,
         DevicePicker.Callback, android.os.Handler.Callback, OnClickListener, ExitConfirmCallback,
         OtaUiCallback, SettingChangeListener {
+
+    //region Variables
+
+    //region Static Variables
     private static final String TAG = Settings.TAG_PREFIX + "MainActivity";
     private static final String JEFF_TAG = "Jeff_Tag";
     private static final boolean DBG_LIFECYCLE = true;
@@ -79,87 +85,19 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private static final int PROCESS_BATTERY_STATUS_UI = 802;
     private static final int PROCESS_EVENT_DEVICE_UNSUPPORTED = 803;
     private static final int PROCESS_CONNECTION_STATE_CHANGE_UI = 804;
-    private static final String FRAGMENT_TEMP = "fragment_temp";
 
+    // Keys to send data to/from activities for fragments.
+	private static final String FRAGMENT_TEMP = "fragment_temp";
     private static final String FRAGMENT_HUMD = "fragment_humd";
     private static final String FRAGMENT_PRES = "fragment_pres";
     private static final String FRAGMENT_GYRO = "fragment_gyro";
     private static final String FRAGMENT_COMPASS = "fragment_compass";
     private static final String FRAGMENT_ACCELEROMETER = "fragment_accelerometer";
 
-    private static int getBatteryStatusIcon(int batteryLevel) {
-        if (batteryLevel <= 0) {
-            return R.drawable.battery_charge_background;
-        } else if (batteryLevel < 25) {
-            return R.drawable.battery_charge_25;
-        } else if (batteryLevel < 50) {
-            return R.drawable.battery_charge_50;
-        } else if (batteryLevel < 75) {
-            return R.drawable.battery_charge_75;
-        } else {
-            return R.drawable.battery_charge_full;
-        }
-
-    }
-
-    /**
-     * Handles Bluetooth on/off events. If Bluetooth is turned off, exit this
-     * app
-     *
-     * @author Fred Chen
-     *
-     */
-    private class BluetoothStateReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(final Context context, final Intent intent) {
-            mSensorDataEventHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    int btState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                            BluetoothAdapter.ERROR);
-                    switch (btState) {
-
-                        case BluetoothAdapter.STATE_TURNING_OFF:
-                            exitApp();
-                            break;
-                    }
-                }
-            });
-        }
-    }
-
-    private class UiHandlerCallback implements Handler.Callback {
-
-        @Override
-        public boolean handleMessage(Message msg) {
-            switch (msg.what) {
-
-                // These events run on the mUiHandler on the UI Main Thread
-                case COMPLETE_INIT:
-                    initResourcesAndResume();
-                    break;
-                case PROCESS_EVENT_DEVICE_UNSUPPORTED:
-                    Toast.makeText(getApplicationContext(), R.string.error_unsupported_device,
-                            Toast.LENGTH_SHORT).show();
-                    break;
-                case PROCESS_CONNECTION_STATE_CHANGE_UI:
-                    updateConnectionStateWidgets();
-                    break;
-                case PROCESS_BATTERY_STATUS_UI:
-                    updateBatteryLevelWidget(msg.arg1);
-                    break;
-                case PROCESS_SENSOR_DATA_ON_UI:
-                    processSensorData((byte[]) msg.obj);
-                    break;
-            }
-            return true;
-        }
-    };
+    //endregion
 
     private Button mButtonConnectDisconnect;
     private TemperatureFragment mTemperatureFrag;
-
     private HumidityFragment mHumidityFrag;
     private PressureFragment mPressureFrag;
     private GyroFragment mGyroFrag;
@@ -190,200 +128,339 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private boolean mCanAskForFirmwareUpdate;
     private boolean mMandatoryUpdateRequired;
     private boolean mIsTempScaleF = false;
+    private long mLastRefreshTimeMs;
+    private long mLastRefreshSlowerTimeMs;
+
+    //endregion
+
+
+
+    //region Our Methods
 
     /**
-     * Initialize async resources in series
-     *
-     * @return
+     * Create an intent for MainActivity.
+     * @param packageContext Context.
+     * @return Properly formatted intent for MainActivity.
      */
-    private boolean initResourcesAndResume() {
-        switch (mInitState) {
-            case 0:
-                // Check if license accepted. If not, prompt user
-                if (!mLicense.checkLicenseAccepted(getFragmentManager())) {
-                    return false;
-                }
-                mInitState++;
-            case 1:
-                // Check if BT is on, If not, prompt user
-                if (!BluetoothEnabler.checkBluetoothOn(this)) {
-                    return false;
-                }
-                mInitState++;
-                SenseManager.init(this);
-            case 2:
-                // Check if sense manager initialized. If not, keep waiting
-                if (waitForSenseManager()) {
-                    return false;
-                }
-                mInitState = -1;
-                checkDevicePicked();
-        }
-        mSenseManager.registerEventCallbackHandler(mSensorDataEventHandler);
-
-        if (mSenseManager.isConnectedAndAvailable()) {
-            mSenseManager.enableNotifications(true);
-        }
-        updateConnectionStateWidgets();
-        updateTemperatureScaleType();
-        updateGyroState();
-        updateAccelerometerState();
-        updateCompassState();
-        Settings.addChangeListener(this);
-        return true;
+    public static Intent newIntent(Context packageContext) {
+        // Make new intent.
+        Intent intent = new Intent(packageContext, MainActivity.class);
+        return intent;
     }
 
-    private void updateGyroState() {
-        if (mGyroFrag != null) {
-            mGyroFrag.setEnabled(Settings.gyroEnabled());
-        }
+
+    //region Database Methods
+    //************************************  This is to open the database - JEFF  Added******************
+
+    //************************************  This is to open the database - JEFF  Added******************
+
+    private Context mContext;
+    private SQLiteDatabase mDatabase;
+
+    private String mHumidityValue;
+    private String mPressureValue;
+    private String mTemperatureValue;
+
+    private String mAccel_0_Value;
+    private String mAccel_1_Value;
+    private String mAccel_2_Value;
+
+    private String mGryo_0_Value;
+    private String mGryo_1_Value;
+    private String mGryo_2_Value;
+
+    private String mMagneto_0_Value;
+    private String mMagneto_1_Value;
+    private String mMagneto_2_Value;
+
+    public void StartDatabase(Context context){
+        mContext = context.getApplicationContext();
+        mDatabase = new WicedDataBaseHelper(mContext).getReadableDatabase();
+        Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
     }
 
-    private void updateAccelerometerState() {
-        if (mAccelerometerFrag != null) {
-            mAccelerometerFrag.setEnabled(Settings.accelerometerEnabled());
-        }
+    private ContentValues getMovementContentValues(){
+        long time= System.currentTimeMillis();
+
+        ContentValues values = new ContentValues();
+
+        values.put(WicedDBSchema.MovementTable.Cols.TIME, time);
+        //Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, mAccel_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, mAccel_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, mAccel_2_Value);
+        //Log.d(JEFF_TAG, "Put Accel into MovementContentValues" + mAccel_0_Value + ", " + mAccel_1_Value + ", " + mAccel_2_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_0, mGryo_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_1, mGryo_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_2, mGryo_2_Value);
+        //Log.d(JEFF_TAG, "Put Gryo into MovementContentValues" + mGryo_0_Value + ", " + mGryo_1_Value + ", " + mGryo_2_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, mMagneto_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, mMagneto_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, mMagneto_2_Value);
+        //Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
+
+        return values;
+    }
+	
+    private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
+
+        Time now = new Time();
+        now.setToNow();
+        String time = now.format("%Y_%m_%d_%H_%M_%S");
+
+        ContentValues values = new ContentValues();
+        values.put(WicedDBSchema.ThermoTable.Cols.TIME, time);
+        Log.d(JEFF_TAG, "Put time into ContentValues = " + time);
+        values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue);
+        Log.d(JEFF_TAG, "Put Humidty into ContentValues = " + mHumidityValue);
+        values.put(WicedDBSchema.ThermoTable.Cols.PRESSURE, mPressureValue);
+        Log.d(JEFF_TAG, "Put Pressure into ContentValues = " + mPressureValue);
+        values.put(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, mTemperatureValue);
+        Log.d(JEFF_TAG, "Put Temperature into ContentValues = " + mTemperatureValue);
+
+        return values;
+    }
+
+
+
+
+    public  void addThermoData () {//  Add a row of data????????????What am I passing in?    see page 326
+        Log.d(JEFF_TAG, "adding thermo data");
+        ContentValues values = getContentValues();
+        mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
+    }
+
+    public void addMovementData () {
+        // Log.d(JEFF_TAG, "adding movement data");
+        ContentValues values = getMovementContentValues();
+        mDatabase.insert(WicedDBSchema.MovementTable.NAME, null, values);
+    }
+
+    public void DataDump(){
+        viewAllThermo();
+        viewAllMovement();
+        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
+    }
+
+    public int getRecordCount(String tableName) {
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        int total = res.getCount();
+
+        res.close();
+        return total;
 
     }
 
-    private void updateCompassState() {
-        if (mCompassFrag != null) {
-            mCompassFrag.setEnabled(Settings.compassEnabled());
-        }
+    public int getMaxColumnData(String columnName, String tableName) {
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT MAX(" + columnName + ") FROM " + tableName);
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
+
     }
 
-    /**
-     * Acquire reference to the SenseManager serivce....This is asynchronous
-     *
-     * @return
-     */
-    private boolean waitForSenseManager() {
-        // Check if the SenseManager is available. If not, keep retrying
-        mSenseManager = SenseManager.getInstance();
-        if (mSenseManager == null) {
-            mUiHandler.sendEmptyMessageDelayed(COMPLETE_INIT, Settings.SERVICE_INIT_TIMEOUT_MS);
-            return true;
-        }
-        return false;
+    public int getMinColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT MIN(" + columnName + ") FROM " + tableName);
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
     }
 
-    /**
-     * Exit the application and cleanup resources
-     */
-    protected void exitApp() {
-        if (DBG_LIFECYCLE) {
-            Log.d(TAG, "exitApp");
-        }
-        SenseManager.destroy();
-        finish();
+    public int getAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName);
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
     }
 
-    /**
-     * Update the battery level UI widgets
-     *
-     * @param batteryLevel
-     */
-    private void updateBatteryLevelWidget(int batteryLevel) {
-        mLastBatteryStatus = batteryLevel;
-        invalidateOptionsMenu();
+    public int getNegAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " < 0");
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
     }
 
-    /**
-     * Update all UI components related to the connection state
-     */
-    private void updateConnectionStateWidgets() {
-        mConnectDisconnectPending = false;
-        if (mButtonConnectDisconnect != null) {
-            if (mSenseManager.getDevice() == null) {
-                mButtonConnectDisconnect.setEnabled(false);
-                mButtonConnectDisconnect.setText(R.string.no_device);
-                return;
+    public int getPosAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " > 0");
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public Cursor getAllData(String tableName){
+        Cursor res = mDatabase.rawQuery("select * from " + tableName, null);
+        return res;
+    }
+	
+    public void viewAllThermo() {
+        Cursor res = getAllData(WicedDBSchema.ThermoTable.NAME);
+        res.moveToFirst();
+        if (res.getCount() ==0){
+            showMessage("Error", "Nothing found");
+        }else {
+            StringBuffer buffer = new StringBuffer();
+
+            buffer.append("Thermo Data Total Records = " + getRecordCount(WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Humidity\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Temperature\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Pressure\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME) + "\n\n");
+
+            while (!res.isAfterLast()){
+                buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + res.getString(1)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + res.getString(2)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + " " + res.getString(3)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " " + res.getString(4)+"\n\n");
+                res.moveToNext();
             }
-            if (!mButtonConnectDisconnect.isEnabled()) {
-                mButtonConnectDisconnect.setEnabled(true);
-            }
-            if (mSenseManager.isConnectedAndAvailable()) {
-                mButtonConnectDisconnect.setText(R.string.disconnect);
-            } else {
-                mButtonConnectDisconnect.setText(R.string.connect);
-            }
-            mButtonConnectDisconnect.setEnabled(true);
+
+            showMessage("Thermo Data", buffer.toString());
         }
-        invalidateOptionsMenu();
+
+        res.close();
     }
 
-    /**
-     * Initialize the license agreement dialog
-     */
-    private void initLicenseUtils() {
-        mLicense = new LicenseUtils(this, this);
-    }
+    public void viewAllMovement() {
+        Cursor res = getAllData(WicedDBSchema.MovementTable.NAME);
+        res.moveToFirst();
 
-    /**
-     * Initialize the exit confirmation dialog
-     */
-    private void initExitConfirm() {
-        mExitConfirm = new ExitConfirmUtils(this);
-    }
-
-    /*
-     * Initialize the device picker
-     *
-     * @return
-     */
-    private void initDevicePicker() {
-        mDevicePickerTitle = getString(R.string.title_devicepicker);
-        mDevicePicker = new DevicePicker(this, Settings.PACKAGE_NAME,
-                DevicePickerActivity.class.getName(), this,
-                Uri.parse("content://com.brodcom.app.wicedsense/device/pick"));
-        mDevicePicker.init();
-    }
-
-    /**
-     * Launch the device picker
-     */
-    private void launchDevicePicker() {
-        mDevicePicker.launch(mDevicePickerTitle, null, null);
-    }
-
-    /**
-     * Cleanup the device picker
-     */
-    private void cleanupDevicePicker() {
-        if (mDevicePicker != null) {
-            mDevicePicker.cleanup();
-            mDevicePicker = null;
-        }
-    }
-
-    /**
-     * Check if a device has been picked, and launch the device picker if not...
-     *
-     * @return
-     */
-    private boolean checkDevicePicked() {
-        if (mSenseManager != null && mSenseManager.getDevice() != null) {
-            return true;
-        }
-        // Launch device picker
-        launchDevicePicker();
-        return false;
-    }
-
-    /**
-     * Start the connect or disconnect, based on the current state of the device
-     */
-    private void doConnectDisconnect() {
-        if (!mSenseManager.isConnectedAndAvailable()) {
-            if (!mSenseManager.connect()) {
-                updateConnectionStateWidgets();
-            }
+        if (res.getCount() ==0){
+            showMessage("Error", "Nothing found");
         } else {
-            if (!mSenseManager.disconnect()) {
-                updateConnectionStateWidgets();
+            StringBuffer buffer = new StringBuffer();
+
+            //ACCELERATION DATA
+
+            buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME)+"\n\n");
+
+            buffer.append("Acceleration\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            //GYRO DATA
+            buffer.append("Gyro\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            //Magnetometer Data
+
+            buffer.append("MAGNETOMETER\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            while (!res.isAfterLast()){
+                buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + res.getString(1)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " " + res.getString(2)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " " + res.getString(3)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " " + res.getString(4)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_0 + " " + res.getString(5)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_1 + " " + res.getString(6)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + res.getString(7)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + res.getString(8)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + res.getString(9)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + res.getString(10)+"\n\n");
+                res.moveToNext();
             }
+            showMessage("Movement Data", buffer.toString());
         }
+
+        res.close();
     }
+	
+    public void showMessage(String title, String message){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(true)
+                .setTitle(title)
+                .setMessage(message)
+                .show();
+    }
+
+    //endregion
+
+
+    //endregion
+
+
+
+    //region Override Methods
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -704,8 +781,430 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         return true;
     }
 
-    private long mLastRefreshTimeMs;
-    private long mLastRefreshSlowerTimeMs;
+    /**
+     * Callback invoked when the connect/disconnect button is clicked or the
+     * battery status button is clicked
+     */
+    @Override
+    public void onClick(View v) {
+
+        // Process connect/disconnect request
+        if (v == mButtonConnectDisconnect) {
+            // Temporary disable the button while a connect/disconnect is
+            // pending
+            mConnectDisconnectPending = true;
+            mButtonConnectDisconnect.setEnabled(false);
+            doConnectDisconnect();
+        }
+
+        // Process battery status request
+        else if (v == mBatteryStatusView) {
+            if (mSenseManager != null) {
+                mSenseManager.getBatteryStatus();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == BluetoothEnabler.REQUEST_ENABLE_BT) {
+            if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+                exitApp();
+                return;
+            }
+            initResourcesAndResume();
+        }
+    }
+
+    /**
+     * Show exit confirmation dialog if user presses the button
+     */
+    @Override
+    public void onBackPressed() {
+        mExitConfirm.show(getFragmentManager());
+    }
+
+    /**
+     * Callback invoked when the user selects "ok" from the exit confirmation
+     * dialog
+     */
+    @Override
+    public void onExit() {
+        exitApp();
+    }
+
+    /**
+     * Callback invoked when the user cancels exitting the application.
+     */
+    @Override
+    public void onExitCancelled() {
+    }
+
+    /**
+     * Callback invoked when the OTA firmware update has completed
+     *
+     * @param completed
+     *            : if true, OTA upgrade was successful, false otherwise.
+     */
+    @Override
+    public void onOtaFinished(boolean completed) {
+        if (DBG_LIFECYCLE) {
+            Log.d(TAG, "onOtaFinished");
+        }
+
+        // If OTA did not complete and the patch was mandatory, disconnect
+        if (!completed && mMandatoryUpdateRequired) {
+            if (mSenseManager != null) {
+                mSenseManager.disconnect();
+            }
+            return;
+        }
+
+        // Enable notifications
+        if (mSenseManager != null) {
+            mSenseManager.setOtaUpdateMode(false);
+        }
+    }
+
+    @Override
+    public void onSettingsChanged(String settingName) {
+        if (Settings.SETTINGS_KEY_TEMPERATURE_SCALE_TYPE.equals(settingName)) {
+            //updateTemperatureScaleType();
+        }
+    }
+
+    //endregion
+
+
+
+    //region Broadcom's Pre-provided methods.
+
+    // Int which changes based on battery level? Seems pointless to have in this kind of app but okay.
+    private static int getBatteryStatusIcon(int batteryLevel) {
+        if (batteryLevel <= 0) {
+            return R.drawable.battery_charge_background;
+        } else if (batteryLevel < 25) {
+            return R.drawable.battery_charge_25;
+        } else if (batteryLevel < 50) {
+            return R.drawable.battery_charge_50;
+        } else if (batteryLevel < 75) {
+            return R.drawable.battery_charge_75;
+        } else {
+            return R.drawable.battery_charge_full;
+        }
+
+    }
+
+    /**
+     * Handles Bluetooth on/off events. If Bluetooth is turned off, exit this
+     * app
+     *
+     * @author Fred Chen
+     *
+     */
+    private class BluetoothStateReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            mSensorDataEventHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    int btState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                            BluetoothAdapter.ERROR);
+                    switch (btState) {
+
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                            exitApp();
+                            break;
+                    }
+                }
+            });
+        }
+    }
+
+    private class UiHandlerCallback implements Handler.Callback {
+
+        @Override
+        public boolean handleMessage(Message msg) {
+            switch (msg.what) {
+
+                // These events run on the mUiHandler on the UI Main Thread
+                case COMPLETE_INIT:
+                    initResourcesAndResume();
+                    break;
+                case PROCESS_EVENT_DEVICE_UNSUPPORTED:
+                    Toast.makeText(getApplicationContext(), R.string.error_unsupported_device,
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case PROCESS_CONNECTION_STATE_CHANGE_UI:
+                    updateConnectionStateWidgets();
+                    break;
+                case PROCESS_BATTERY_STATUS_UI:
+                    updateBatteryLevelWidget(msg.arg1);
+                    break;
+                case PROCESS_SENSOR_DATA_ON_UI:
+                    processSensorData((byte[]) msg.obj);
+                    break;
+            }
+            return true;
+        }
+    };
+
+
+    /**
+     * Initialize async resources in series
+     *
+     * @return
+     */
+    private boolean initResourcesAndResume() {
+        switch (mInitState) {
+            case 0:
+                // Check if license accepted. If not, prompt user
+                if (!mLicense.checkLicenseAccepted(getFragmentManager())) {
+                    return false;
+                }
+                mInitState++;
+            case 1:
+                // Check if BT is on, If not, prompt user
+                if (!BluetoothEnabler.checkBluetoothOn(this)) {
+                    return false;
+                }
+                mInitState++;
+                SenseManager.init(this);
+            case 2:
+                // Check if sense manager initialized. If not, keep waiting
+                if (waitForSenseManager()) {
+                    return false;
+                }
+                mInitState = -1;
+                checkDevicePicked();
+        }
+        mSenseManager.registerEventCallbackHandler(mSensorDataEventHandler);
+
+        if (mSenseManager.isConnectedAndAvailable()) {
+            mSenseManager.enableNotifications(true);
+        }
+        updateConnectionStateWidgets();
+        //updateTemperatureScaleType();
+        //updateGyroState();
+        //updateAccelerometerState();
+        //updateCompassState();
+        Settings.addChangeListener(this);
+        return true;
+    }
+
+    /**
+     * Acquire reference to the SenseManager serivce....This is asynchronous
+     *
+     * @return
+     */
+    private boolean waitForSenseManager() {
+        // Check if the SenseManager is available. If not, keep retrying
+        mSenseManager = SenseManager.getInstance();
+        if (mSenseManager == null) {
+            mUiHandler.sendEmptyMessageDelayed(COMPLETE_INIT, Settings.SERVICE_INIT_TIMEOUT_MS);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Exit the application and cleanup resources
+     */
+    protected void exitApp() {
+        if (DBG_LIFECYCLE) {
+            Log.d(TAG, "exitApp");
+        }
+        SenseManager.destroy();
+        finish();
+    }
+
+    /**
+     * Update the battery level UI widgets
+     *
+     * @param batteryLevel
+     */
+    private void updateBatteryLevelWidget(int batteryLevel) {
+        mLastBatteryStatus = batteryLevel;
+        invalidateOptionsMenu();
+    }
+
+
+    //region License Stuff
+
+    /**
+     * Initialize the license agreement dialog
+     */
+    private void initLicenseUtils() {
+        mLicense = new LicenseUtils(this, this);
+    }
+
+    /**
+     * Initialize the exit confirmation dialog
+     */
+    private void initExitConfirm() {
+        mExitConfirm = new ExitConfirmUtils(this);
+    }
+
+    //endregion
+
+
+    //region Device Selection/Connection
+
+    /**
+     * Update all UI components related to the connection state
+     */
+    private void updateConnectionStateWidgets() {
+        mConnectDisconnectPending = false;
+        if (mButtonConnectDisconnect != null) {
+            if (mSenseManager.getDevice() == null) {
+                mButtonConnectDisconnect.setEnabled(false);
+                mButtonConnectDisconnect.setText(R.string.no_device);
+                return;
+            }
+            if (!mButtonConnectDisconnect.isEnabled()) {
+                mButtonConnectDisconnect.setEnabled(true);
+            }
+            if (mSenseManager.isConnectedAndAvailable()) {
+                mButtonConnectDisconnect.setText(R.string.disconnect);
+            } else {
+                mButtonConnectDisconnect.setText(R.string.connect);
+            }
+            mButtonConnectDisconnect.setEnabled(true);
+        }
+        invalidateOptionsMenu();
+    }
+
+    /*
+     * Initialize the device picker
+     *
+     * @return
+     */
+    private void initDevicePicker() {
+        mDevicePickerTitle = getString(R.string.title_devicepicker);
+        mDevicePicker = new DevicePicker(this, Settings.PACKAGE_NAME,
+                DevicePickerActivity.class.getName(), this,
+                Uri.parse("content://com.brodcom.app.wicedsense/device/pick"));
+        mDevicePicker.init();
+    }
+
+    /**
+     * Launch the device picker
+     */
+    private void launchDevicePicker() {
+        mDevicePicker.launch(mDevicePickerTitle, null, null);
+    }
+
+    /**
+     * Cleanup the device picker
+     */
+    private void cleanupDevicePicker() {
+        if (mDevicePicker != null) {
+            mDevicePicker.cleanup();
+            mDevicePicker = null;
+        }
+    }
+
+    /**
+     * Check if a device has been picked, and launch the device picker if not...
+     *
+     * @return
+     */
+    private boolean checkDevicePicked() {
+        if (mSenseManager != null && mSenseManager.getDevice() != null) {
+            return true;
+        }
+        // Launch device picker
+        launchDevicePicker();
+        return false;
+    }
+
+    /**
+     * Start the connect or disconnect, based on the current state of the device
+     */
+    private void doConnectDisconnect() {
+        if (!mSenseManager.isConnectedAndAvailable()) {
+            if (!mSenseManager.connect()) {
+                updateConnectionStateWidgets();
+            }
+        } else {
+            if (!mSenseManager.disconnect()) {
+                updateConnectionStateWidgets();
+            }
+        }
+    }
+
+    //endregion
+
+    private void updateGyroState() {
+        if (mGyroFrag != null) {
+            mGyroFrag.setEnabled(Settings.gyroEnabled());
+        }
+    }
+
+    private void updateAccelerometerState() {
+        if (mAccelerometerFrag != null) {
+            mAccelerometerFrag.setEnabled(Settings.accelerometerEnabled());
+        }
+
+    }
+
+    private void updateCompassState() {
+        if (mCompassFrag != null) {
+            mCompassFrag.setEnabled(Settings.compassEnabled());
+        }
+    }
+
+
+
+
+    /**
+     * Update the temperature gauge by dynamically replacing the gauge with the
+     * correct temperature type scale
+     */
+     private void updateTemperatureScaleType() {
+     // Get the old temperatureType
+     String tempScaleType = Settings.getTemperatureeScaleType();
+     mIsTempScaleF = Settings.TEMPERATURE_SCALE_TYPE_F.equals(tempScaleType);
+
+     // Check if this is a new temperature fragment
+     if (mTemperatureFrag == null) {
+     TemperatureFragment f = new TemperatureFragment();
+     f.setScaleType(mIsTempScaleF ? TemperatureFragment.SCALE_F
+     : TemperatureFragment.SCALE_C);
+     FragmentTransaction ft = getFragmentManager().beginTransaction();
+     ft.replace(R.id.fragment_temp, f, FRAGMENT_TEMPERATURE);
+     ft.commit();
+     mTemperatureFrag = f;
+     mAnimationSlower.addAnimated(f);
+     return;
+     }
+
+     // This is a refresh. Check if the temp scale has changed
+     boolean isLastScaleF = TemperatureFragment.SCALE_F == mTemperatureFrag.getScaleType();
+     if (mIsTempScaleF == isLastScaleF) {
+     // No change. exit
+     return;
+     }
+
+     float lastTempValue = mTemperatureFrag.getLastValue();
+     TemperatureFragment f = new TemperatureFragment();
+     f.setScaleType(mIsTempScaleF ? TemperatureFragment.SCALE_F : TemperatureFragment.SCALE_C);
+     FragmentTransaction ft = getFragmentManager().beginTransaction();
+     ft.replace(R.id.fragment_temp, f, FRAGMENT_TEMPERATURE);
+     if (mIsTempScaleF) {
+     // Convert last temp C to F
+     f.setInitialValue(SensorDataParser.tempCtoF(lastTempValue));
+     } else {
+     // Convert last temp F to C
+     f.setInitialValue(SensorDataParser.tempFtoC(lastTempValue));
+     }
+     ft.commit();
+     mAnimationSlower.removeAnimated(mTemperatureFrag);
+     mAnimationSlower.addAnimated(f);
+
+     mTemperatureFrag = f;
+     }
 
     /**
      * Parses the sensor data bytes and updates the corresponding sensor(s) UI
@@ -798,7 +1297,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mHumidityValue = Float.toString(value);
                     Log.d(JEFF_TAG,"Humidity = " + mHumidityValue);
                     offset += SensorDataParser.SENSOR_HUMD_DATA_SIZE;
-                    mHumidityFrag.setValue(mAnimationSlower, value);
+                    //mHumidityFrag.setValue(mAnimationSlower, value);
                     updateView = true;
                 }
                 if (mPressureFrag.isVisible() && SensorDataParser.pressureHasChanged(maskField)) {
@@ -806,7 +1305,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mPressureValue = Float.toString(value);
                     Log.d(JEFF_TAG, "Pressure = " + mPressureValue);
                     offset += SensorDataParser.SENSOR_PRES_DATA_SIZE;
-                    mPressureFrag.setValue(mAnimationSlower, value);
+                    //mPressureFrag.setValue(mAnimationSlower, value);
                     updateView = true;
                 }
 
@@ -819,7 +1318,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mTemperatureValue = Float.toString(value);
                     Log.d(JEFF_TAG, "Temperature = "+mTemperatureValue);
                     offset += SensorDataParser.SENSOR_TEMP_DATA_SIZE;
-                    mTemperatureFrag.setValue(mAnimationSlower, value);
+                    //mTemperatureFrag.setValue(mAnimationSlower, value);
                     updateView = true;
                 }
                 if (updateView && mAnimationSlower != null) {
@@ -833,90 +1332,8 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         // If animation is enabled, call animate...
     }
 
-    /**
-     * Callback invoked when the connect/disconnect button is clicked or the
-     * battery status button is clicked
-     */
-    @Override
-    public void onClick(View v) {
 
-        // Process connect/disconnect request
-        if (v == mButtonConnectDisconnect) {
-            // Temporary disable the button while a connect/disconnect is
-            // pending
-            mConnectDisconnectPending = true;
-            mButtonConnectDisconnect.setEnabled(false);
-            doConnectDisconnect();
-        }
-
-        // Process battery status request
-        else if (v == mBatteryStatusView) {
-            if (mSenseManager != null) {
-                mSenseManager.getBatteryStatus();
-            }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == BluetoothEnabler.REQUEST_ENABLE_BT) {
-            if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-                exitApp();
-                return;
-            }
-            initResourcesAndResume();
-        }
-    }
-
-    /**
-     * Show exit confirmation dialog if user presses the button
-     */
-    @Override
-    public void onBackPressed() {
-        mExitConfirm.show(getFragmentManager());
-    }
-
-    /**
-     * Callback invoked when the user selects "ok" from the exit confirmation
-     * dialog
-     */
-    @Override
-    public void onExit() {
-        exitApp();
-    }
-
-    /**
-     * Callback invoked when the user cancels exitting the application.
-     */
-    @Override
-    public void onExitCancelled() {
-    }
-
-    /**
-     * Callback invoked when the OTA firmware update has completed
-     *
-     * @param completed
-     *            : if true, OTA upgrade was successful, false otherwise.
-     */
-    @Override
-    public void onOtaFinished(boolean completed) {
-        if (DBG_LIFECYCLE) {
-            Log.d(TAG, "onOtaFinished");
-        }
-
-        // If OTA did not complete and the patch was mandatory, disconnect
-        if (!completed && mMandatoryUpdateRequired) {
-            if (mSenseManager != null) {
-                mSenseManager.disconnect();
-            }
-            return;
-        }
-
-        // Enable notifications
-        if (mSenseManager != null) {
-            mSenseManager.setOtaUpdateMode(false);
-        }
-    }
+    //region Firmware section. Is this for the fab thing you connect to?
 
     /**
      * Start a request to read application id, major version,minor version of a
@@ -1043,354 +1460,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         }
     }
 
-    @Override
-    public void onSettingsChanged(String settingName) {
-        if (Settings.SETTINGS_KEY_TEMPERATURE_SCALE_TYPE.equals(settingName)) {
-            updateTemperatureScaleType();
-        }
+    //endregion
 
-    }
 
-    /**
-     * Update the temperature gauge by dynamically replacing the gauge with the
-     * correct temperature type scale
-     */
-    private void updateTemperatureScaleType() {
-        // Get the old temperatureType
-        String tempScaleType = Settings.getTemperatureeScaleType();
-        mIsTempScaleF = Settings.TEMPERATURE_SCALE_TYPE_F.equals(tempScaleType);
+    //endregion
 
-        // Check if this is a new temperature fragment
-        if (mTemperatureFrag == null) {
-            TemperatureFragment f = new TemperatureFragment();
-            f.setScaleType(mIsTempScaleF ? TemperatureFragment.SCALE_F
-                    : TemperatureFragment.SCALE_C);
-            FragmentTransaction ft = getFragmentManager().beginTransaction();
-            ft.replace(R.id.fragment_temp, f, FRAGMENT_TEMP);
-            ft.commit();
-            mTemperatureFrag = f;
-            mAnimationSlower.addAnimated(f);
-            return;
-        }
-
-        // This is a refresh. Check if the temp scale has changed
-        boolean isLastScaleF = TemperatureFragment.SCALE_F == mTemperatureFrag.getScaleType();
-        if (mIsTempScaleF == isLastScaleF) {
-            // No change. exit
-            return;
-        }
-
-        float lastTempValue = mTemperatureFrag.getLastValue();
-        TemperatureFragment f = new TemperatureFragment();
-        f.setScaleType(mIsTempScaleF ? TemperatureFragment.SCALE_F : TemperatureFragment.SCALE_C);
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
-        ft.replace(R.id.fragment_temp, f, FRAGMENT_TEMP);
-        if (mIsTempScaleF) {
-            // Convert last temp C to F
-            f.setInitialValue(SensorDataParser.tempCtoF(lastTempValue));
-        } else {
-            // Convert last temp F to C
-            f.setInitialValue(SensorDataParser.tempFtoC(lastTempValue));
-        }
-        ft.commit();
-        mAnimationSlower.removeAnimated(mTemperatureFrag);
-        mAnimationSlower.addAnimated(f);
-
-        mTemperatureFrag = f;
-    }
-
-    //************************************  This is to open the database - JEFF  Added******************
-
-    private Context mContext;
-    private SQLiteDatabase mDatabase;
-
-    private String mHumidityValue;
-    private String mPressureValue;
-    private String mTemperatureValue;
-
-    private String mAccel_0_Value;
-    private String mAccel_1_Value;
-    private String mAccel_2_Value;
-
-    private String mGryo_0_Value;
-    private String mGryo_1_Value;
-    private String mGryo_2_Value;
-
-    private String mMagneto_0_Value;
-    private String mMagneto_1_Value;
-    private String mMagneto_2_Value;
-
-    public void StartDatabase(Context context){
-        mContext = context.getApplicationContext();
-        mDatabase = new WicedDataBaseHelper(mContext).getReadableDatabase();
-        Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
-    }
-
-    private ContentValues getMovementContentValues(){
-        long time= System.currentTimeMillis();
-
-        ContentValues values = new ContentValues();
-
-        values.put(WicedDBSchema.MovementTable.Cols.TIME, time);
-        //Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
-        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, mAccel_0_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, mAccel_1_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, mAccel_2_Value);
-        //Log.d(JEFF_TAG, "Put Accel into MovementContentValues" + mAccel_0_Value + ", " + mAccel_1_Value + ", " + mAccel_2_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.GYRO_0, mGryo_0_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.GYRO_1, mGryo_1_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.GYRO_2, mGryo_2_Value);
-        //Log.d(JEFF_TAG, "Put Gryo into MovementContentValues" + mGryo_0_Value + ", " + mGryo_1_Value + ", " + mGryo_2_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, mMagneto_0_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, mMagneto_1_Value);
-        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, mMagneto_2_Value);
-        //Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
-
-        return values;
-    }
-    private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
-
-        Time now = new Time();
-        now.setToNow();
-        String time = now.format("%Y_%m_%d_%H_%M_%S");
-
-        ContentValues values = new ContentValues();
-        values.put(WicedDBSchema.ThermoTable.Cols.TIME, time);
-        Log.d(JEFF_TAG, "Put time into ContentValues = " + time);
-        values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue);
-        Log.d(JEFF_TAG, "Put Humidty into ContentValues = " + mHumidityValue);
-        values.put(WicedDBSchema.ThermoTable.Cols.PRESSURE, mPressureValue);
-        Log.d(JEFF_TAG, "Put Pressure into ContentValues = " + mPressureValue);
-        values.put(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, mTemperatureValue);
-        Log.d(JEFF_TAG, "Put Temperature into ContentValues = " + mTemperatureValue);
-
-        return values;
-    }
-
-    public  void addThermoData () {//  Add a row of data????????????What am I passing in?    see page 326
-        Log.d(JEFF_TAG, "adding thermo data");
-        ContentValues values = getContentValues();
-        mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
-    }
-
-    public void addMovementData () {
-       // Log.d(JEFF_TAG, "adding movement data");
-        ContentValues values = getMovementContentValues();
-        mDatabase.insert(WicedDBSchema.MovementTable.NAME, null, values);
-    }
-
-    public void DataDump(){
-        viewAllThermo();
-        viewAllMovement();
-        Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
-    }
-
-    public int getRecordCount(String tableName) {
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        int total = res.getCount();
-
-        res.close();
-        return total;
-
-    }
-
-    public int getMaxColumnData(String columnName, String tableName) {
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT MAX(" + columnName + ") FROM " + tableName);
-
-        res.close();
-        return (int) stmt.simpleQueryForLong();
-
-    }
-
-    public int getMinColumnData (String columnName, String tableName){
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT MIN(" + columnName + ") FROM " + tableName);
-
-        res.close();
-        return (int) stmt.simpleQueryForLong();
-    }
-
-    public int getAvgColumnData (String columnName, String tableName){
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName);
-
-        res.close();
-        return (int) stmt.simpleQueryForLong();
-    }
-
-    public int getNegAvgColumnData (String columnName, String tableName){
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " < 0");
-
-        res.close();
-        return (int) stmt.simpleQueryForLong();
-    }
-
-    public int getPosAvgColumnData (String columnName, String tableName){
-        Cursor res = getAllData(tableName);
-        res.moveToFirst();
-
-        final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " > 0");
-
-        res.close();
-        return (int) stmt.simpleQueryForLong();
-    }
-
-    public Cursor getAllData(String tableName){
-        Cursor res = mDatabase.rawQuery("select * from " + tableName, null);
-        return res;
-    }
-    public void viewAllThermo() {
-        Cursor res = getAllData(WicedDBSchema.ThermoTable.NAME);
-        res.moveToFirst();
-        if (res.getCount() ==0){
-            showMessage("Error", "Nothing found");
-        }else {
-            StringBuffer buffer = new StringBuffer();
-
-            buffer.append("Thermo Data Total Records = " + getRecordCount(WicedDBSchema.ThermoTable.NAME)+"\n\n");
-
-            buffer.append("Humidity\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
-                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
-                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)+"\n\n");
-
-            buffer.append("Temperature\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
-                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
-                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)+"\n\n");
-
-            buffer.append("Pressure\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
-                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
-                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME) + "\n\n");
-
-            while (!res.isAfterLast()){
-                buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + res.getString(1)+"\n");
-                buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + res.getString(2)+"\n");
-                buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + " " + res.getString(3)+"\n");
-                buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " " + res.getString(4)+"\n\n");
-                res.moveToNext();
-            }
-
-            showMessage("Thermo Data", buffer.toString());
-        }
-
-        res.close();
-    }
-
-    public void viewAllMovement() {
-        Cursor res = getAllData(WicedDBSchema.MovementTable.NAME);
-        res.moveToFirst();
-
-        if (res.getCount() ==0){
-            showMessage("Error", "Nothing found");
-        } else {
-            StringBuffer buffer = new StringBuffer();
-
-            //ACCELERATION DATA
-
-            buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME)+"\n\n");
-
-            buffer.append("Acceleration\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
-
-            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
-
-            //GYRO DATA
-            buffer.append("Gyro\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME)+"\n");
-
-            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
-
-            //Magnetometer Data
-
-            buffer.append("MAGNETOMETER\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
-
-            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
-
-            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
-                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
-
-            while (!res.isAfterLast()){
-                buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + res.getString(1)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " " + res.getString(2)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " " + res.getString(3)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " " + res.getString(4)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_0 + " " + res.getString(5)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_1 + " " + res.getString(6)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + res.getString(7)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + res.getString(8)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + res.getString(9)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + res.getString(10)+"\n\n");
-                res.moveToNext();
-            }
-            showMessage("Movement Data", buffer.toString());
-        }
-
-        res.close();
-    }
-    public void showMessage(String title, String message){
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setCancelable(true)
-                .setTitle(title)
-                .setMessage(message)
-                .show();
-    }
 }
