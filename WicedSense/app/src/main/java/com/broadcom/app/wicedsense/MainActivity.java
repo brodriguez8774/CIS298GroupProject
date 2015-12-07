@@ -744,7 +744,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                         mAccel_0_Value = Integer.toString(values[0]);
                         mAccel_1_Value = Integer.toString(values[1]);
                         mAccel_2_Value = Integer.toString(values[2]);
-                        Log.d(JEFF_TAG, "Accelerometer " + values[0] +", " + values[1] + ", " + values[2]);
+                       // Log.d(JEFF_TAG, "Accelerometer " + values[0] +", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_ACCEL_DATA_SIZE;
@@ -757,7 +757,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                         mGryo_0_Value = Integer.toString(values[0]);
                         mGryo_1_Value = Integer.toString(values[1]);
                         mGryo_2_Value = Integer.toString(values[2]);
-                        Log.d(JEFF_TAG, "Gyro " + values[0] + ", " + values[1] + ", " + values[2]);
+                      //  Log.d(JEFF_TAG, "Gyro " + values[0] + ", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_GYRO_DATA_SIZE;
@@ -771,7 +771,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                         mMagneto_0_Value = Integer.toString(values[0]);
                         mMagneto_1_Value = Integer.toString(values[1]);
                         mMagneto_2_Value = Integer.toString(values[2]);
-                        Log.d(JEFF_TAG, "Magnetometer " + values[0] + ", " + values[1] + ", " + values[2]);
+                      //  Log.d(JEFF_TAG, "Magnetometer " + values[0] + ", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_MAGNO_DATA_SIZE;
@@ -1132,19 +1132,19 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         ContentValues values = new ContentValues();
 
         values.put(WicedDBSchema.MovementTable.Cols.TIME, time);
-        Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
+        //Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
         values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, mAccel_0_Value);
         values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, mAccel_1_Value);
         values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, mAccel_2_Value);
-        Log.d(JEFF_TAG, "Put Accel into MovementContentValues" + mAccel_0_Value + ", " + mAccel_1_Value + ", " + mAccel_2_Value);
+        //Log.d(JEFF_TAG, "Put Accel into MovementContentValues" + mAccel_0_Value + ", " + mAccel_1_Value + ", " + mAccel_2_Value);
         values.put(WicedDBSchema.MovementTable.Cols.GYRO_0, mGryo_0_Value);
         values.put(WicedDBSchema.MovementTable.Cols.GYRO_1, mGryo_1_Value);
         values.put(WicedDBSchema.MovementTable.Cols.GYRO_2, mGryo_2_Value);
-        Log.d(JEFF_TAG, "Put Gryo into MovementContentValues" + mGryo_0_Value + ", " + mGryo_1_Value + ", " + mGryo_2_Value);
+        //Log.d(JEFF_TAG, "Put Gryo into MovementContentValues" + mGryo_0_Value + ", " + mGryo_1_Value + ", " + mGryo_2_Value);
         values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, mMagneto_0_Value);
         values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, mMagneto_1_Value);
         values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, mMagneto_2_Value);
-        Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
+        //Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
 
         return values;
     }
@@ -1174,7 +1174,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     }
 
     public void addMovementData () {
-        Log.d(JEFF_TAG, "adding movement data");
+       // Log.d(JEFF_TAG, "adding movement data");
         ContentValues values = getMovementContentValues();
         mDatabase.insert(WicedDBSchema.MovementTable.NAME, null, values);
     }
@@ -1183,55 +1183,72 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         viewAllThermo();
         viewAllMovement();
         Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
-
-
-        Toast.makeText(this, "Humidity Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "Temperature Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "Pressure Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
-
-        Toast.makeText(this, " Max Acceleration = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "Min Acceleration = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "AVG Acceleration = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
-                        ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME)
-                        , Toast.LENGTH_LONG).show();
     }
 
+    public int getRecordCount(String tableName) {
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
 
+        int total = res.getCount();
+
+        res.close();
+        return total;
+
+    }
 
     public int getMaxColumnData(String columnName, String tableName) {
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
 
-
-        Cursor mCursor = mDatabase.rawQuery("SELECT MAX(" + columnName + ") FROM " + tableName,null);
-        mCursor.moveToFirst();
-        Log.d(JEFF_TAG, "cursor data " + mCursor);
         final SQLiteStatement stmt = mDatabase
                 .compileStatement("SELECT MAX(" + columnName + ") FROM " + tableName);
 
+        res.close();
         return (int) stmt.simpleQueryForLong();
+
     }
 
     public int getMinColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
         final SQLiteStatement stmt = mDatabase
                 .compileStatement("SELECT MIN(" + columnName + ") FROM " + tableName);
 
+        res.close();
         return (int) stmt.simpleQueryForLong();
     }
 
     public int getAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
         final SQLiteStatement stmt = mDatabase
                 .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName);
 
+        res.close();
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public int getNegAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " < 0");
+
+        res.close();
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public int getPosAvgColumnData (String columnName, String tableName){
+        Cursor res = getAllData(tableName);
+        res.moveToFirst();
+
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName + " WHERE "+ columnName + " > 0");
+
+        res.close();
         return (int) stmt.simpleQueryForLong();
     }
 
@@ -1244,41 +1261,130 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         res.moveToFirst();
         if (res.getCount() ==0){
             showMessage("Error", "Nothing found");
-            return;
+        }else {
+            StringBuffer buffer = new StringBuffer();
+
+            buffer.append("Thermo Data Total Records = " + getRecordCount(WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Humidity\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Temperature\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)+"\n\n");
+
+            buffer.append("Pressure\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                    + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME) + "\n\n");
+
+            while (!res.isAfterLast()){
+                buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + res.getString(1)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + res.getString(2)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + " " + res.getString(3)+"\n");
+                buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " " + res.getString(4)+"\n\n");
+                res.moveToNext();
+            }
+
+            showMessage("Thermo Data", buffer.toString());
         }
-        StringBuffer buffer = new StringBuffer();
-        while (res.moveToNext()){
-            buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + res.getString(1)+"\n");
-            buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + res.getString(2)+"\n");
-            buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + " " + res.getString(3)+"\n");
-            buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " " + res.getString(4)+"\n\n");
-        }
+
         res.close();
-        showMessage("Thermo Data", buffer.toString());
     }
 
     public void viewAllMovement() {
         Cursor res = getAllData(WicedDBSchema.MovementTable.NAME);
         res.moveToFirst();
+
         if (res.getCount() ==0){
             showMessage("Error", "Nothing found");
-            return;
+        } else {
+            StringBuffer buffer = new StringBuffer();
+
+            //ACCELERATION DATA
+
+            buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME)+"\n\n");
+
+            buffer.append("Acceleration\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            //GYRO DATA
+            buffer.append("Gyro\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.GYRO_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            //Magnetometer Data
+
+            buffer.append("MAGNETOMETER\n MAX = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME)+"\n");
+
+            buffer.append(" Min = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Negatives = " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getNegAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n");
+
+            buffer.append(" AVG of Positives = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME) +
+                    ", " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME) +"\n\n");
+
+            while (!res.isAfterLast()){
+                buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + res.getString(1)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " " + res.getString(2)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " " + res.getString(3)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " " + res.getString(4)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_0 + " " + res.getString(5)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_1 + " " + res.getString(6)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + res.getString(7)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + res.getString(8)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + res.getString(9)+"\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + res.getString(10)+"\n\n");
+                res.moveToNext();
+            }
+            showMessage("Movement Data", buffer.toString());
         }
-        StringBuffer buffer = new StringBuffer();
-        while (res.moveToNext()){
-            buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + res.getString(1)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " " + res.getString(2)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " " + res.getString(3)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " " + res.getString(4)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_0 + " " + res.getString(5)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_1 + " " + res.getString(6)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + res.getString(7)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + res.getString(8)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + res.getString(9)+"\n");
-            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + res.getString(10)+"\n\n");
-        }
+
         res.close();
-        showMessage("Movement Data", buffer.toString());
     }
     public void showMessage(String title, String message){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);

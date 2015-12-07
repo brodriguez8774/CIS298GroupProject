@@ -28,34 +28,34 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
         db.execSQL("create table " + WicedDBSchema.ThermoTable.NAME + "(" +
                         " _id integer primary key autoincrement, " +
                         WicedDBSchema.ThermoTable.Cols.TIME + ", "+
-                        WicedDBSchema.ThermoTable.Cols.HUMIDITY + ", " +
-                        WicedDBSchema.ThermoTable.Cols.PRESSURE + ", " +
-                        WicedDBSchema.ThermoTable.Cols.TEMPERATURE + ")"
+                        WicedDBSchema.ThermoTable.Cols.HUMIDITY + " REAL, " +
+                        WicedDBSchema.ThermoTable.Cols.PRESSURE + " REAL, " +
+                        WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " REAL)"
         );
         String tempString = "create table " + WicedDBSchema.MovementTable.NAME + "(" +
                 " _id integer primary key autoincrement, " +
                 WicedDBSchema.MovementTable.Cols.TIME + ", "+
-                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + ", " +
-                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + ", " +
-                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + ", " +
-                WicedDBSchema.MovementTable.Cols.GYRO_0 + ", " +
-                WicedDBSchema.MovementTable.Cols.GYRO_1 + ", " +
-                WicedDBSchema.MovementTable.Cols.GYRO_2 + ", " +
-                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + ", " +
-                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1+ ", " +
-                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + ")";
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.GYRO_0 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.GYRO_1 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.GYRO_2 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " REAL, " +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1+ " REAL, " +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " REAL)";
         db.execSQL("create table " + WicedDBSchema.MovementTable.NAME + "(" +
                         " _id integer primary key autoincrement, " +
                         WicedDBSchema.MovementTable.Cols.TIME + ", "+
-                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + ", " +
-                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + ", " +
-                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + ", " +
-                        WicedDBSchema.MovementTable.Cols.GYRO_0 + ", " +
-                        WicedDBSchema.MovementTable.Cols.GYRO_1 + ", " +
-                        WicedDBSchema.MovementTable.Cols.GYRO_2 + ", " +
-                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + ", " +
-                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1+ ", " +
-                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + ")"
+                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.GYRO_0 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.GYRO_1 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.GYRO_2 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1+ " REAL, " +
+                        WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " REAL)"
         );
         Log.d(JEFF_TAG, tempString);
     }
