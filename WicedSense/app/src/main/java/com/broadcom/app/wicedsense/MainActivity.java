@@ -33,6 +33,7 @@ import com.broadcom.ui.ExitConfirmUtils;
 import com.broadcom.ui.ExitConfirmFragment.ExitConfirmCallback;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
@@ -740,6 +741,10 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     if (Settings.accelerometerEnabled() && mAccelerometerFrag.isVisible()) {
                         SensorDataParser.getAccelorometerData(sensorData, offset, values);
                         mAccelerometerFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        mAccel_0_Value = Integer.toString(values[0]);
+                        mAccel_1_Value = Integer.toString(values[1]);
+                        mAccel_2_Value = Integer.toString(values[2]);
+                        Log.d(JEFF_TAG, "Accelerometer " + values[0] +", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_ACCEL_DATA_SIZE;
@@ -749,6 +754,10 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     if (Settings.gyroEnabled() && mGyroFrag.isVisible()) {
                         SensorDataParser.getGyroData(sensorData, offset, values);
                         mGyroFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        mGryo_0_Value = Integer.toString(values[0]);
+                        mGryo_1_Value = Integer.toString(values[1]);
+                        mGryo_2_Value = Integer.toString(values[2]);
+                        Log.d(JEFF_TAG, "Gyro " + values[0] + ", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_GYRO_DATA_SIZE;
@@ -759,6 +768,10 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                         SensorDataParser.getMagnometerData(sensorData, offset, values);
                         float angle = SensorDataParser.getCompassAngleDegrees(values);
                         mCompassFrag.setValue(mAnimation, angle, values[0], values[1], values[2]);
+                        mMagneto_0_Value = Integer.toString(values[0]);
+                        mMagneto_1_Value = Integer.toString(values[1]);
+                        mMagneto_2_Value = Integer.toString(values[2]);
+                        Log.d(JEFF_TAG, "Magnetometer " + values[0] + ", " + values[1] + ", " + values[2]);
                         updateView = true;
                     }
                     offset += SensorDataParser.SENSOR_MAGNO_DATA_SIZE;
@@ -766,6 +779,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
                 if (updateView && mAnimation != null) {
                     mAnimation.animate();
+                    addMovementData();
                 }
                 break;
             case 7:
@@ -1094,12 +1108,46 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private String mPressureValue;
     private String mTemperatureValue;
 
+    private String mAccel_0_Value;
+    private String mAccel_1_Value;
+    private String mAccel_2_Value;
+
+    private String mGryo_0_Value;
+    private String mGryo_1_Value;
+    private String mGryo_2_Value;
+
+    private String mMagneto_0_Value;
+    private String mMagneto_1_Value;
+    private String mMagneto_2_Value;
+
     public void StartDatabase(Context context){
         mContext = context.getApplicationContext();
-        mDatabase = new ThermoBaseHelper(mContext).getReadableDatabase();
+        mDatabase = new WicedDataBaseHelper(mContext).getReadableDatabase();
         Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
     }
 
+    private ContentValues getMovementContentValues(){
+        long time= System.currentTimeMillis();
+
+        ContentValues values = new ContentValues();
+
+        values.put(WicedDBSchema.MovementTable.Cols.TIME, time);
+        Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, mAccel_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, mAccel_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, mAccel_2_Value);
+        Log.d(JEFF_TAG, "Put Accel into MovementContentValues" + mAccel_0_Value + ", " + mAccel_1_Value + ", " + mAccel_2_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_0, mGryo_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_1, mGryo_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.GYRO_2, mGryo_2_Value);
+        Log.d(JEFF_TAG, "Put Gryo into MovementContentValues" + mGryo_0_Value + ", " + mGryo_1_Value + ", " + mGryo_2_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0, mMagneto_0_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, mMagneto_1_Value);
+        values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, mMagneto_2_Value);
+        Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
+
+        return values;
+    }
     private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
 
         Time now = new Time();
@@ -1120,46 +1168,123 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     }
 
     public  void addThermoData () {//  Add a row of data????????????What am I passing in?    see page 326
-        Log.d(JEFF_TAG, "adding data");
+        Log.d(JEFF_TAG, "adding thermo data");
         ContentValues values = getContentValues();
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }
 
-    private Cursor mMaxCursor;
+    public void addMovementData () {
+        Log.d(JEFF_TAG, "adding movement data");
+        ContentValues values = getMovementContentValues();
+        mDatabase.insert(WicedDBSchema.MovementTable.NAME, null, values);
+    }
+
     public void DataDump(){
+        viewAllThermo();
+        viewAllMovement();
         Log.d(JEFF_TAG, "Place data dump in ExitConfirmFragment.java");
 
 
-        Toast.makeText(this, "Humidity Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "Temperature Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE), Toast.LENGTH_LONG).show();
-        Toast.makeText(this, "Pressure Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE)
-                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE)
-                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Humidity Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Temperature Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Pressure Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME)
+                + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME), Toast.LENGTH_LONG).show();
+
+        Toast.makeText(this, " Max Acceleration = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Min Acceleration = " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getMinColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "AVG Acceleration = " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME) +
+                        ", " + getAvgColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2, WicedDBSchema.MovementTable.NAME)
+                        , Toast.LENGTH_LONG).show();
     }
 
-    public int getMaxColumnData(String columnName) {
 
-            final SQLiteStatement stmt = mDatabase
-            .compileStatement("SELECT MAX(" + columnName +") FROM "+ WicedDBSchema.ThermoTable.NAME);
 
-        return (int) stmt.simpleQueryForLong();
-    }
+    public int getMaxColumnData(String columnName, String tableName) {
 
-    public int getMinColumnData (String columnName){
+
+        Cursor mCursor = mDatabase.rawQuery("SELECT MAX(" + columnName + ") FROM " + tableName,null);
+        mCursor.moveToFirst();
+        Log.d(JEFF_TAG, "cursor data " + mCursor);
         final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT MIN(" + columnName + ") FROM " + WicedDBSchema.ThermoTable.NAME);
+                .compileStatement("SELECT MAX(" + columnName + ") FROM " + tableName);
 
         return (int) stmt.simpleQueryForLong();
     }
 
-    public int getAvgColumnData (String columnName){
+    public int getMinColumnData (String columnName, String tableName){
         final SQLiteStatement stmt = mDatabase
-                .compileStatement("SELECT AVG(" + columnName + ") FROM " + WicedDBSchema.ThermoTable.NAME);
+                .compileStatement("SELECT MIN(" + columnName + ") FROM " + tableName);
 
         return (int) stmt.simpleQueryForLong();
+    }
+
+    public int getAvgColumnData (String columnName, String tableName){
+        final SQLiteStatement stmt = mDatabase
+                .compileStatement("SELECT AVG(" + columnName + ") FROM " + tableName);
+
+        return (int) stmt.simpleQueryForLong();
+    }
+
+    public Cursor getAllData(String tableName){
+        Cursor res = mDatabase.rawQuery("select * from " + tableName, null);
+        return res;
+    }
+    public void viewAllThermo() {
+        Cursor res = getAllData(WicedDBSchema.ThermoTable.NAME);
+        res.moveToFirst();
+        if (res.getCount() ==0){
+            showMessage("Error", "Nothing found");
+            return;
+        }
+        StringBuffer buffer = new StringBuffer();
+        while (res.moveToNext()){
+            buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + res.getString(1)+"\n");
+            buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + res.getString(2)+"\n");
+            buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + " " + res.getString(3)+"\n");
+            buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " " + res.getString(4)+"\n\n");
+        }
+        res.close();
+        showMessage("Thermo Data", buffer.toString());
+    }
+
+    public void viewAllMovement() {
+        Cursor res = getAllData(WicedDBSchema.MovementTable.NAME);
+        res.moveToFirst();
+        if (res.getCount() ==0){
+            showMessage("Error", "Nothing found");
+            return;
+        }
+        StringBuffer buffer = new StringBuffer();
+        while (res.moveToNext()){
+            buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + res.getString(1)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0 + " " + res.getString(2)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1 + " " + res.getString(3)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2 + " " + res.getString(4)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_0 + " " + res.getString(5)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_1 + " " + res.getString(6)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + res.getString(7)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + res.getString(8)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + res.getString(9)+"\n");
+            buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + res.getString(10)+"\n\n");
+        }
+        res.close();
+        showMessage("Movement Data", buffer.toString());
+    }
+    public void showMessage(String title, String message){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(true)
+                .setTitle(title)
+                .setMessage(message)
+                .show();
     }
 }

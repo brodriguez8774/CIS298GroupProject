@@ -15,4 +15,20 @@ public class WicedDBSchema {
 
         }
     }
+    public static final class MovementTable {
+        public static final String NAME = "movement";
+
+        public static final class Cols {
+            public static final String TIME = "time";
+            public static final String ACCELEROMETER_0 = "accelerometer_0";
+            public static final String ACCELEROMETER_1 = "accelerometer_1";
+            public static final String ACCELEROMETER_2 = "accelerometer_2";
+            public static final String GYRO_0 = "gyro_0";
+            public static final String GYRO_1 = "gyro_1";
+            public static final String GYRO_2 = "gyro_2";
+            public static final String MAGNETOMETER_0 = "magnetometer_0";
+            public static final String MAGNETOMETER_1 = "magnetometer_1";
+            public static final String MAGNETOMETER_2 = "magnetometer_2";
+        }
+    }
 }
