@@ -21,6 +21,10 @@
     <string name="use_animation">Use animation</string>
     <string name="update_fw">Check for software updates</string>
     <string name="get_fw_info">Get sensor info</string>
+    <string name="data_analysis">Data Analysis</string>
+    <string name="data_dump">Display Raw Data</string>
+    <string name="clear_data">Delete All Data</string>
+    <string name="no_data_message">No Data Turn on WICED to capture data</string>
 
     <!-- Menu strings -->
     <string name="action_settings">Settings</string>
@@ -43,7 +47,6 @@
     <string name="setting_title_gyro">Gyro</string>
     <string name="setting_title_ecompass">eCompass</string>
     <string name="setting_title_accelerometer">Accelerometer</string>
-    <string name="data_dump">Data Dump</string>
     <string name="disconnect_message">Disconnect from Wiced first.</string>
    
     <string-array name="temperature_scale_type_names">

@@ -62,7 +62,9 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int OldVersion, int newVersion){
-
+        db.execSQL("DROP TABLE IF EXISTS " + WicedDBSchema.MovementTable.NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + WicedDBSchema.ThermoTable.NAME);
+        onCreate(db);
     }
 
     public Cursor getAllData(){
