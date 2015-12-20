@@ -4,6 +4,9 @@
     android:versionCode="108"
     android:versionName="1.08" >
 
+    <permission-group android:name="sdcard_rw"/>
+    <permission-group android:name="media_rw"/>
+
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />

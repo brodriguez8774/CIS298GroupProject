@@ -16,6 +16,11 @@
  ******************************************************************************/
 package com.broadcom.app.wicedsense;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import com.broadcom.app.ledevicepicker.DevicePicker;
@@ -50,6 +55,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -582,7 +588,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             case R.id.action_pick:
                 launchDevicePicker();
                 return true;
-            case R.id.data_analysis:
+            case R.id.thermo_analysis:
                 if (isDeviceConnected){
                     Toast.makeText(this,R.string.disconnect_message, Toast.LENGTH_SHORT).show();
 
@@ -605,7 +611,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     }
                 }
                 return true;
-            case R.id.data_dump:
+            case R.id.movement_data_dump:
                 if (isDeviceConnected){
                     Toast.makeText(this,R.string.disconnect_message, Toast.LENGTH_SHORT).show();
                 }else {
@@ -1281,6 +1287,36 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         Cursor cursor = mDatabase.rawQuery("select * from " + tableName, null);
         return cursor;
     }
+
+    public StringBuffer SavableThermoData(){
+        StringBuffer buffer = new StringBuffer();
+        Cursor cursor = getAllData(WicedDBSchema.ThermoTable.NAME);
+        cursor.moveToFirst();
+        if (cursor.getCount() ==0){
+            showMessage("Error", "Nothing found");
+        }else {
+
+            buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + "," );
+            buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + ",");
+            buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + ",");
+            buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + "\n");
+
+            while (!cursor.isAfterLast()){
+                buffer.append(cursor.getString(1)+",");
+                buffer.append(cursor.getString(2)+",");
+                buffer.append(cursor.getString(3)+",");
+                buffer.append (cursor.getString(4)+"\n");
+                cursor.moveToNext();
+            }
+
+            showMessage("Thermo Data", buffer.toString());
+        }
+
+        cursor.close();
+        return buffer;
+    }
+
+
     public void viewAllThermo() {
         Cursor cursor = getAllData(WicedDBSchema.ThermoTable.NAME);
         cursor.moveToFirst();
@@ -1334,14 +1370,121 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
     public void viewAllMovement() {
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
-            cursor.moveToFirst();
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME, cursor) + "\n\n");
 
-            if (cursor.getCount() ==0){
-                showMessage("Error", "Nothing found");
-            } else {
-                StringBuffer buffer = new StringBuffer();
+        checkExternalMedia();
+        SaveDatabase("ThermoData", SavableThermoData());
+        SaveDatabase("MovementData", BasicMovementData());
+      //  Toast.makeText(this,"Saving Movement Data", Toast.LENGTH_SHORT).show();
+        cursor.close();
+    }
 
-                buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME, cursor)+"\n\n");
+    public void SaveDatabase(String fileName, StringBuffer stringBuffer){
+       // File file = new File(this.getExternalFilesDir(null), "WicedMovementData.txt");
+
+        StringBuffer buffer = new StringBuffer().append(stringBuffer);
+        String dataString = buffer.toString();
+
+        long time= System.currentTimeMillis();
+        File root = Environment.getExternalStorageDirectory();
+        showMessage("Directory", root.toString());
+        File dir = new File(root.getAbsolutePath() + "/downloadXXXXX");
+        showMessage("Directory 2", dir.toString());
+        dir.mkdir();
+
+        //Create a File for the output file data
+        File saveFilePath = new File (dir, fileName + time + ".txt");
+
+        try {
+            FileOutputStream fos = new FileOutputStream(saveFilePath, true);
+            OutputStreamWriter out = new OutputStreamWriter(fos);
+            out.write(dataString);
+            out.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.d(TAG, "******* File not found. Did you" +
+                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
+        } catch (IOException e) {
+            Log.d(TAG, "Error on write");
+            e.printStackTrace();
+        }
+
+
+
+    }
+    private void checkExternalMedia(){
+        boolean mExternalStorageAvailable = false;
+        boolean mExternalStorageWriteable = false;
+        String state = Environment.getExternalStorageState();
+
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            // Can read and write the media
+            mExternalStorageAvailable = mExternalStorageWriteable = true;
+        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            // Can only read the media
+            mExternalStorageAvailable = true;
+            mExternalStorageWriteable = false;
+        } else {
+            // Can't read or write
+            mExternalStorageAvailable = mExternalStorageWriteable = false;
+        }
+    }
+
+    public StringBuffer BasicMovementData(){
+        Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
+
+        cursor.moveToFirst();
+        String columString =WicedDBSchema.MovementTable.Cols.TIME.toString() + "," +
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0.toString() + "," +
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1.toString() + "," +
+                WicedDBSchema.MovementTable.Cols.ACCELEROMETER_2.toString() + "," +
+                WicedDBSchema.MovementTable.Cols.GYRO_0.toString()  + "," +
+                WicedDBSchema.MovementTable.Cols.GYRO_1.toString()  + "," +
+                WicedDBSchema.MovementTable.Cols.GYRO_2.toString()  + "," +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0.toString()  + "," +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1.toString()  + "," +
+                WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2.toString()+"\n";
+        StringBuffer buffer = new StringBuffer().append(columString);
+
+
+        if (cursor.getCount() ==0){
+            showMessage("Error", "Nothing found");
+        } else {
+
+
+
+
+            while (!cursor.isAfterLast()){
+                buffer.append(cursor.getString(1)+",");
+                buffer.append(cursor.getString(2)+",");
+                buffer.append(cursor.getString(3)+",");
+                buffer.append(cursor.getString(4)+",");
+                buffer.append(cursor.getString(5)+",");
+                buffer.append(cursor.getString(6)+",");
+                buffer.append(cursor.getString(7)+",");
+                buffer.append(cursor.getString(8)+",");
+                buffer.append(cursor.getString(9)+",");
+                buffer.append(cursor.getString(10)+"\n");
+                cursor.moveToNext();
+            }
+
+        }
+        cursor.close();
+        return buffer;
+    }
+
+    public  StringBuffer  AllMovementData(){
+        Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
+
+        cursor.moveToFirst();
+        StringBuffer buffer = new StringBuffer();
+        if (cursor.getCount() ==0){
+            showMessage("Error", "Nothing found");
+        } else {
+
+
+
 
             while (!cursor.isAfterLast()){
                 buffer.append(WicedDBSchema.MovementTable.Cols.TIME + " " + cursor.getString(1)+"\n");
@@ -1353,15 +1496,15 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 buffer.append(WicedDBSchema.MovementTable.Cols.GYRO_2 + " " + cursor.getString(7)+"\n");
                 buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " " + cursor.getString(8)+"\n");
                 buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1 + " " + cursor.getString(9)+"\n");
-                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + cursor.getString(10)+"\n\n");
+                buffer.append(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " " + cursor.getString(10)+"\n");
                 cursor.moveToNext();
             }
 
-            showMessage("Movement Data", buffer.toString());
         }
-
         cursor.close();
+        return buffer;
     }
+
     public void movementDataAnalyzed() {
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
         cursor.moveToFirst();

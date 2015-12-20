@@ -31,11 +31,20 @@
         android:showAsAction="always"
         android:title="@string/devicepicker_pick"/>
     <item
-        android:id="@+id/data_analysis"
-        android:title="@string/data_analysis"/>
+        android:id="@+id/thermo_analysis"
+        android:title="@string/thermo_analysis"/>
     <item
-        android:id="@+id/data_dump"
-        android:title="@string/data_dump"/>
+        android:id="@+id/movement_analysis"
+        android:title="@string/movement_analysis"/>
+    <item
+        android:id="@+id/thermo_data_dump"
+        android:title="@string/thermo_data_dump"/>
+    <item
+        android:id="@+id/movement_data_dump"
+        android:title="@string/movement_data_dump"/>
+    <item
+        android:id="@+id/save_all_data"
+        android:title="@string/save_all_data"/>
     <item
         android:id="@+id/clear_data"
         android:title="@string/clear_data"/>

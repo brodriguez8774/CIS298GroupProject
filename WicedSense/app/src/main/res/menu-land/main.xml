@@ -36,10 +36,10 @@
         android:showAsAction="ifRoom|withText"
         android:title="@string/devicepicker_pick"/>
     <item
-        android:id="@+id/data_analysis"
+        android:id="@+id/thermo_analysis"
         android:title="@string/data_analysis"/>
     <item
-        android:id="@+id/data_dump"
+        android:id="@+id/movement_data_dump"
         android:title="@string/data_dump"/>
     <item
         android:id="@+id/clear_data"

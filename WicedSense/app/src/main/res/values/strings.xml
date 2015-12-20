@@ -28,6 +28,12 @@
 
     <!-- Menu strings -->
     <string name="action_settings">Settings</string>
+    <string name="movement_analysis">Movement Analysis</string>
+    <string name="thermo_analysis">Thermo Analysis</string>
+    <string name="movement_data_dump">Movement Data</string>
+    <string name="thermo_data_dump">Thermo Data</string>
+    <string name="save_all_data">Save All Data</string>
+
     <!-- Compass -->
     <string name="compass_raw_angle">%1$s\u00B0</string>
     <string name="compass_bkg">Compass Background</string>
