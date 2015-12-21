@@ -24,7 +24,9 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
     }
 
     @Override
-    public void onCreate(SQLiteDatabase db){  //  Creates the ThermoTable and defines its fields.
+    public void onCreate(SQLiteDatabase db){
+
+        // //  Creates the ThermoTable and defines its fields.
         db.execSQL("create table " + WicedDBSchema.ThermoTable.NAME + "(" +
                         " _id integer primary key autoincrement, " +
                         WicedDBSchema.ThermoTable.Cols.TIME + ", "+
@@ -32,6 +34,8 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
                         WicedDBSchema.ThermoTable.Cols.PRESSURE + " REAL, " +
                         WicedDBSchema.ThermoTable.Cols.TEMPERATURE + " REAL)"
         );
+
+        // String created for debugging purpose.
         String tempString = "create table " + WicedDBSchema.MovementTable.NAME + "(" +
                 " _id integer primary key autoincrement, " +
                 WicedDBSchema.MovementTable.Cols.TIME + ", "+
@@ -44,6 +48,8 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
                 WicedDBSchema.MovementTable.Cols.MAGNETOMETER_0 + " REAL, " +
                 WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1+ " REAL, " +
                 WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2 + " REAL)";
+
+        //Creates the MomementTable and defines its fields.
         db.execSQL("create table " + WicedDBSchema.MovementTable.NAME + "(" +
                         " _id integer primary key autoincrement, " +
                         WicedDBSchema.MovementTable.Cols.TIME + ", "+
@@ -61,13 +67,14 @@ public class WicedDataBaseHelper extends SQLiteOpenHelper {// The SQLiteOpenHelp
     }
 
     @Override
+    //Destroy old table and create new ones when table is upgraded. I used this to clear data.
     public void onUpgrade(SQLiteDatabase db, int OldVersion, int newVersion){
         db.execSQL("DROP TABLE IF EXISTS " + WicedDBSchema.MovementTable.NAME);
         db.execSQL("DROP TABLE IF EXISTS " + WicedDBSchema.ThermoTable.NAME);
         onCreate(db);
     }
 
-    public Cursor getAllData(){
+    public Cursor getAllData(){ //create a cursor to hold the database.
         SQLiteDatabase database = this.getWritableDatabase();
         Cursor res = database.rawQuery("select * from "+ DATABASE_NAME,null);
         return res;

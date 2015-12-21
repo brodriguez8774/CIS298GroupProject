@@ -662,7 +662,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 getFirmwareInfo();
                 return true;
             case R.id.action_settings:
-                // Launch setttings menu
+                // Launch settings menu
                 Intent i = new Intent(this, SettingsActivity.class);
                 startActivity(i);
                 return true;
@@ -779,9 +779,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
     /**
      * Parses the sensor data bytes and updates the corresponding sensor(s) UI
-     * component
+     * component.  This is where the data is captured for saving to the database.
      *
-     * @param sensorData
+     *
      */
     private void processSensorData(byte[] sensorData) {
         if (mAnimation != null && mAnimation.useAnimation()) {
@@ -810,7 +810,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 if (SensorDataParser.accelerometerHasChanged(maskField)) {
                     if (Settings.accelerometerEnabled() && mAccelerometerFrag.isVisible()) {
                         SensorDataParser.getAccelorometerData(sensorData, offset, values);
-                        mAccelerometerFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        mAccelerometerFrag.setValue(mAnimation, values[0], values[1], values[2]);  // Add the Accel data to value
+
+                        //The following values were used for debugging.
                         mAccel_0_Value = Integer.toString(values[0]);
                         mAccel_1_Value = Integer.toString(values[1]);
                         mAccel_2_Value = Integer.toString(values[2]);
@@ -823,7 +825,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 if (SensorDataParser.gyroHasChanged(maskField)) {
                     if (Settings.gyroEnabled() && mGyroFrag.isVisible()) {
                         SensorDataParser.getGyroData(sensorData, offset, values);
-                        mGyroFrag.setValue(mAnimation, values[0], values[1], values[2]);
+                        mGyroFrag.setValue(mAnimation, values[0], values[1], values[2]);  //Add gyro data to value
+
+                        //The following values were used for debugging.
                         mGryo_0_Value = Integer.toString(values[0]);
                         mGryo_1_Value = Integer.toString(values[1]);
                         mGryo_2_Value = Integer.toString(values[2]);
@@ -837,7 +841,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     if (Settings.compassEnabled() && mCompassFrag.isVisible()) {
                         SensorDataParser.getMagnometerData(sensorData, offset, values);
                         float angle = SensorDataParser.getCompassAngleDegrees(values);
-                        mCompassFrag.setValue(mAnimation, angle, values[0], values[1], values[2]);
+                        mCompassFrag.setValue(mAnimation, angle, values[0], values[1], values[2]); //Add magneto values to value
+
+                        //The following values were used for debugging.
                         mMagneto_0_Value = Integer.toString(values[0]);
                         mMagneto_1_Value = Integer.toString(values[1]);
                         mMagneto_2_Value = Integer.toString(values[2]);
@@ -868,7 +874,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mHumidityValue = Float.toString(value);
                     Log.d(JEFF_TAG,"Humidity = " + mHumidityValue);
                     offset += SensorDataParser.SENSOR_HUMD_DATA_SIZE;
-                    mHumidityFrag.setValue(mAnimationSlower, value);
+                    mHumidityFrag.setValue(mAnimationSlower, value);// Add humidity to value
                     updateView = true;
                 }
                 if (mPressureFrag.isVisible() && SensorDataParser.pressureHasChanged(maskField)) {
@@ -876,7 +882,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mPressureValue = Float.toString(value);
                     Log.d(JEFF_TAG, "Pressure = " + mPressureValue);
                     offset += SensorDataParser.SENSOR_PRES_DATA_SIZE;
-                    mPressureFrag.setValue(mAnimationSlower, value);
+                    mPressureFrag.setValue(mAnimationSlower, value); // Add Pressure to value
                     updateView = true;
                 }
 
@@ -889,13 +895,12 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     mTemperatureValue = Float.toString(value);
                     Log.d(JEFF_TAG, "Temperature = "+mTemperatureValue);
                     offset += SensorDataParser.SENSOR_TEMP_DATA_SIZE;
-                    mTemperatureFrag.setValue(mAnimationSlower, value);
+                    mTemperatureFrag.setValue(mAnimationSlower, value); // Add pressure to value
                     updateView = true;
                 }
                 if (updateView && mAnimationSlower != null) {
                     mAnimationSlower.animate();
                     addThermoData();
-                    //***********************************************************************************************************************
                 }
                 break;
         }
@@ -1002,6 +1007,9 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     /**
      * Check for firmware update, if the user allows it or if there is a
      * mandatory update. The connection is assumed to be up
+     * Disabled the check for this, so it will not override the version created
+     * by Jeff Martin with the broadcom version.
+     *
      */
     private void checkForFirmwareUpdate() {
         if (mSenseManager == null) {
@@ -1022,7 +1030,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
     /**
      * Check for firmware update, if the user allows it. The connection is
-     * assumed to be up
+     * assumed to be up.
      *
      * @return
      */
@@ -1191,16 +1199,20 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     private String mMagneto_2_Value;
 
     public void StartDatabase(Context context){
+
+        // This will call and start the database and place in mDatabase
         mContext = context.getApplicationContext();
         mDatabase = new WicedDataBaseHelper(mContext).getReadableDatabase();
-        Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();
+       // Toast.makeText(this, "Main Activity", Toast.LENGTH_SHORT).show();  //used for debugging
     }
 
-    private ContentValues getMovementContentValues(){
-        long time= System.currentTimeMillis();
+    private ContentValues getMovementContentValues(){//This will get all the data in a format needed for adding to the MovementTable
+
+        long time= System.currentTimeMillis();  //get the current system time to use as a time stamp for data just captured.
 
         ContentValues values = new ContentValues();
 
+        //place the data in the values into values.
         values.put(WicedDBSchema.MovementTable.Cols.TIME, time);
         //Log.d(JEFF_TAG, "Put time into MovementContentValues = " + time);
         values.put(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, mAccel_0_Value);
@@ -1216,15 +1228,17 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         values.put(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, mMagneto_2_Value);
         //Log.d(JEFF_TAG, "Put Magneto into MovementContentValues" + mMagneto_0_Value + ", " + mMagneto_1_Value +", " + mMagneto_2_Value);
 
-        return values;
+        return values; //Return all the data needed to place into the MovementTable
     }
-    private ContentValues getContentValues(){ // To place values in the database  ????? What am I passing in?   see page 325
+    private ContentValues getThermoContentValues(){//This will get all the data in a format needed for adding to the ThermoTable
 
         Time now = new Time();
         now.setToNow();
-        String time = now.format("%Y_%m_%d_%H_%M_%S");
+        String time = now.format("%Y_%m_%d_%H_%M_%S");//Only need time to the seconds, since data is capture every 20 seconds.
 
         ContentValues values = new ContentValues();
+
+        //Place data into values
         values.put(WicedDBSchema.ThermoTable.Cols.TIME, time);
         Log.d(JEFF_TAG, "Put time into ContentValues = " + time);
         values.put(WicedDBSchema.ThermoTable.Cols.HUMIDITY, mHumidityValue);
@@ -1234,28 +1248,28 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         values.put(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, mTemperatureValue);
         Log.d(JEFF_TAG, "Put Temperature into ContentValues = " + mTemperatureValue);
 
-        return values;
+        return values;//Return all the data needed to place into the ThermoTable
     }
 
-    public  void addThermoData () {//  Add a row of data
+    public  void addThermoData () {//  Add a row of data into ThermoTable
         Log.d(JEFF_TAG, "adding thermo data");
-        ContentValues values = getContentValues();
+        ContentValues values = getThermoContentValues();
         mDatabase.insert(WicedDBSchema.ThermoTable.NAME, null, values);
     }
 
-    public void addMovementData () {
+    public void addMovementData () { //Add a row of data into MovementTable
        // Log.d(JEFF_TAG, "adding movement data");
         ContentValues values = getMovementContentValues();
         mDatabase.insert(WicedDBSchema.MovementTable.NAME, null, values);
     }
 
-    public void ThermoAnalysis(){
+    public void ThermoAnalysis(){//Call redundant method, originally it called the analysis for both thermo and movement.
         thermoDataAnalyzed();
         //movementDataAnalyzed();
     }
 
 
-    public int getRecordCount(String tableName, Cursor cursor) {
+    public int getRecordCount(String tableName, Cursor cursor) { // Get a record count from a table
         cursor.moveToFirst();
 
         int total = cursor.getCount();
@@ -1264,7 +1278,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
     }
 
-    public int getMaxColumnData(String columnName, String tableName, Cursor cursor) {
+    public int getMaxColumnData(String columnName, String tableName, Cursor cursor) { //Find tha maximum value of a column
 
         cursor.moveToFirst();
 
@@ -1275,7 +1289,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
     }
 
-    public int getMinColumnData (String columnName, String tableName, Cursor cursor){
+    public int getMinColumnData (String columnName, String tableName, Cursor cursor){//Find the minimum value of a column
         cursor.moveToFirst();
 
         final SQLiteStatement stmt = mDatabase
@@ -1284,7 +1298,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         return (int) stmt.simpleQueryForLong();
     }
 
-    public int getAvgColumnData (String columnName, String tableName, Cursor cursor){
+    public int getAvgColumnData (String columnName, String tableName, Cursor cursor){//Find the average value of a column
         cursor.moveToFirst();
 
         final SQLiteStatement stmt = mDatabase
@@ -1293,7 +1307,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         return (int) stmt.simpleQueryForLong();
     }
 
-    public int getNegAvgColumnData (String columnName, String tableName, Cursor cursor){
+    public int getNegAvgColumnData (String columnName, String tableName, Cursor cursor){//Find the average of only the negative values of a column
         cursor.moveToFirst();
 
         final SQLiteStatement stmt = mDatabase
@@ -1302,7 +1316,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         return (int) stmt.simpleQueryForLong();
     }
 
-    public int getPosAvgColumnData (String columnName, String tableName, Cursor cursor){
+    public int getPosAvgColumnData (String columnName, String tableName, Cursor cursor){//Find the average of only the positive values of a column.
         cursor.moveToFirst();
 
         final SQLiteStatement stmt = mDatabase
@@ -1311,12 +1325,12 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         return (int) stmt.simpleQueryForLong();
     }
 
-    public Cursor getAllData(String tableName){
+    public Cursor getAllData(String tableName){//Create a cursor with al the values of a table
         Cursor cursor = mDatabase.rawQuery("select * from " + tableName, null);
         return cursor;
     }
 
-    public StringBuffer SaveableThermoData(){//Thermo data in an CSV file usable by Excel.
+    public StringBuffer SaveableThermoData(){//Place Thermo data into a string using CSV format usable by Excel.
         StringBuffer buffer = new StringBuffer();
         Cursor cursor = getAllData(WicedDBSchema.ThermoTable.NAME);
         cursor.moveToFirst();
@@ -1324,11 +1338,13 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             showMessage("Error", "Nothing found");
         }else {
 
+            //Add a heading to the file
             buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + "," );
             buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + ",");
             buffer.append(WicedDBSchema.ThermoTable.Cols.PRESSURE + ",");
             buffer.append(WicedDBSchema.ThermoTable.Cols.TEMPERATURE + "\n");
 
+            //Add all the data with commas between and return at the end of a line.
             while (!cursor.isAfterLast()){
                 buffer.append(cursor.getString(1)+",");
                 buffer.append(cursor.getString(2)+",");
@@ -1343,7 +1359,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     }
 
 
-    public void viewAllThermo() {
+    public void viewAllThermo() {//Create a buffer to hold all the thermo data and then display it.
         Cursor cursor = getAllData(WicedDBSchema.ThermoTable.NAME);
         cursor.moveToFirst();
         if (cursor.getCount() ==0){
@@ -1353,6 +1369,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
             buffer.append("Thermo Data Total Records = " + getRecordCount(WicedDBSchema.ThermoTable.NAME, cursor)+"\n\n");
 
+            //Pull out all of the data and add to the buffer.
             while (!cursor.isAfterLast()){
                 buffer.append(WicedDBSchema.ThermoTable.Cols.TIME + " " + cursor.getString(1)+"\n");
                 buffer.append(WicedDBSchema.ThermoTable.Cols.HUMIDITY + " " + cursor.getString(2)+"\n");
@@ -1361,13 +1378,13 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 cursor.moveToNext();
             }
 
-            showMessage("Thermo Data", buffer.toString());
+            showMessage("Thermo Data", buffer.toString());//Call method to display the buffer.
         }
 
         cursor.close();
     }
 
-    public void thermoDataAnalyzed(){
+    public void thermoDataAnalyzed(){ //Create a buffer to hold all the Movement analysis and then display it.
         Cursor cursor = getAllData(WicedDBSchema.ThermoTable.NAME);
         cursor.moveToFirst();
         if (cursor.getCount() ==0){
@@ -1375,6 +1392,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         }else {
             StringBuffer buffer = new StringBuffer();
 
+            //Each of the following buffer.append(s) will add to the string what is being done and call the method to get the data and finally add it to the buffer.
             buffer.append("Thermo Data Total Records = " + getRecordCount(WicedDBSchema.ThermoTable.NAME, cursor)+"\n\n");
 
             buffer.append("Humidity\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.HUMIDITY, WicedDBSchema.ThermoTable.NAME, cursor)
@@ -1383,7 +1401,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
             buffer.append("Temperature\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME, cursor)
                     + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME, cursor)
-                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME, cursor)+"\n\n");
+                    + " AVG = " + getAvgColumnData(WicedDBSchema.ThermoTable.Cols.TEMPERATURE, WicedDBSchema.ThermoTable.NAME, cursor) + "\n\n");
 
             buffer.append("Pressure\n Max = " + getMaxColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME, cursor)
                     + " Min = " + getMinColumnData(WicedDBSchema.ThermoTable.Cols.PRESSURE, WicedDBSchema.ThermoTable.NAME, cursor)
@@ -1394,7 +1412,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         cursor.close();
         }
 
-    public void viewAllMovement() {
+    public void viewAllMovement() {//This will place a heading into a buffer and all the movement data and then display it.
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
         StringBuffer buffer = new StringBuffer();
 
@@ -1422,28 +1440,28 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         cursor.close();
     }
 
-    public void SaveAllData(){
-            checkExternalMedia();
-            SaveDatabase("ThermoData", SaveableThermoData());
-            SaveDatabase("MovementData", BasicMovementData());
-            Toast.makeText(this,"Data has been saved.", Toast.LENGTH_SHORT).show();
+    public void SaveAllData(){//This will call the methods that will save the tables into the csv files
+        checkExternalMedia();
+        SaveDatabase("ThermoData", SaveableThermoData());
+        SaveDatabase("MovementData", BasicMovementData());
+        Toast.makeText(this,"Data has been saved.", Toast.LENGTH_SHORT).show();
     }
 
 
-    public void SaveDatabase(String fileName, StringBuffer stringBuffer){//Take the name of the database and the data and create the CSV file
+    public void SaveDatabase(String fileName, StringBuffer stringBuffer){//Take the name of the table and the data and create the CSV file
 
         StringBuffer buffer = new StringBuffer().append(stringBuffer);
         String dataString = buffer.toString();
 
         Time now = new Time();
         now.setToNow();
-        String time = now.format("%Y_%m_%d_%H_%M_%S");
+        String time = now.format("%Y_%m_%d_%H_%M_%S"); //This will add a time stamp to the name of the files to make each file unique.
 
-        File root = Environment.getExternalStorageDirectory();
+        File root = Environment.getExternalStorageDirectory();//If there is a SD card it will save the file there, otherwise it will be saved internally.
         //showMessage("Directory", root.toString());
         File dir = new File(root.getAbsolutePath() + "/downloadXXXXX");
        //  showMessage("Directory 2", dir.toString());
-        dir.mkdir();
+        dir.mkdir();//  If there is not a folder in the spot needed make one.
 
         //Create a File for the output file data
         File saveFilePath = new File (dir, fileName + time + ".csv");
@@ -1455,8 +1473,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             out.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            Log.d(TAG, "******* File not found. Did you" +
-                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
+            Log.d(TAG, "******* File not found." );
         } catch (IOException e) {
             Log.d(TAG, "Error on write");
             e.printStackTrace();
@@ -1465,7 +1482,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
 
 
     }
-    private void checkExternalMedia(){
+    private void checkExternalMedia(){//Method to see if there is a sd card.  Not really needed with current versions of android.
         boolean mExternalStorageAvailable = false;
         boolean mExternalStorageWriteable = false;
         String state = Environment.getExternalStorageState();
@@ -1483,10 +1500,12 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
         }
     }
 
-    public StringBuffer BasicMovementData(){
+    public StringBuffer BasicMovementData() { //Create the movement data into csv format.
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
 
         cursor.moveToFirst();
+
+        //Create the heading
         String columnString =WicedDBSchema.MovementTable.Cols.TIME.toString() + "," +
                 WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0.toString() + "," +
                 WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1.toString() + "," +
@@ -1504,6 +1523,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             showMessage("Error", "Nothing found");
         } else {
 
+            //place all data into buffer separated by commas and line break at the end of data.
             while (!cursor.isAfterLast()){
                 buffer.append(cursor.getString(1)+",");
                 buffer.append(cursor.getString(2)+",");
@@ -1523,7 +1543,8 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
     }
 
 
-    public void movementDataAnalyzed() {
+
+    public void movementDataAnalyzed() {// Method to analyze the movement data.
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
         cursor.moveToFirst();
 
@@ -1533,7 +1554,10 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             StringBuffer buffer = new StringBuffer();
             //ACCELERATION DATA
 
+            //Each of the following buffer.append(s) will add to the buffer what it does and calls a method to do it.
+
             buffer.append("Movement Data Total Records = " + getRecordCount(WicedDBSchema.MovementTable.NAME, cursor)+"\n\n");
+
 
             buffer.append("Acceleration\n MAX 0 = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_0, WicedDBSchema.MovementTable.NAME, cursor) +
                     ", " + "1 = " + getMaxColumnData(WicedDBSchema.MovementTable.Cols.ACCELEROMETER_1, WicedDBSchema.MovementTable.NAME, cursor) +
@@ -1598,12 +1622,12 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                     ", " +  "1 = " +getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_1, WicedDBSchema.MovementTable.NAME, cursor) +
                     ", " +  "2 = " + getPosAvgColumnData(WicedDBSchema.MovementTable.Cols.MAGNETOMETER_2, WicedDBSchema.MovementTable.NAME, cursor) +"\n\n");
 
-        showMessage("Movement Data Analyzed", buffer.toString());
+        showMessage("Movement Data Analyzed", buffer.toString());  //Output the data
         }
         cursor.close();
     }
 
-    public void showMessage(String title, String message){
+    public void showMessage(String title, String message){  //Generic method to create a dialog and display it
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setCancelable(true)
                 .setTitle(title)
@@ -1611,7 +1635,7 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
                 .show();
     }
 
-    public void ConfirmDeleteData(){
+    public void ConfirmDeleteData(){  //method to clear all data from the database I trick it into using database update to do the work.
 
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             @Override
@@ -1630,11 +1654,12 @@ public class MainActivity extends Activity implements OnLicenseAcceptListener,
             }
         };
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);  //Have to use a different dialaog buleder since this as a question
         builder.setMessage("Are you sure you wish to delete all data?").setPositiveButton("Yes", dialogClickListener)
                 .setNegativeButton("No", dialogClickListener).show();
     }
-    private boolean doesDataExist(){
+    private boolean doesDataExist(){  // Method to check if there is data in the movement table since the movement table loads data at a faster
+    //rate than the thermo table, if there is data in movement there will be data in thermo.
         Cursor cursor = getAllData(WicedDBSchema.MovementTable.NAME);
         cursor.moveToFirst();
         if (cursor.getCount() ==0){

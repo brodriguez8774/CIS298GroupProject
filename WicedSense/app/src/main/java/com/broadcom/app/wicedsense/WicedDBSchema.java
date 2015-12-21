@@ -3,7 +3,10 @@ package com.broadcom.app.wicedsense;
 /**
  * Created by jmartin5229 on 11/9/2015.
  */
-public class WicedDBSchema {
+public class WicedDBSchema {  //These are used to define the name and  fields of the tables. By placing the fields in columns,
+    //this helps to differentiate that they are fields in the database.
+
+    //Define the ThermoTable.
     public static final class ThermoTable { //  Name of the Table
         public static final String NAME = "thermo";
 
@@ -14,7 +17,7 @@ public class WicedDBSchema {
             public static final String TEMPERATURE = "temerature";
 
         }
-    }
+    }//Define the MovementTable
     public static final class MovementTable {
         public static final String NAME = "movement";
 
